@@ -597,24 +597,32 @@ void c_Solver::WriteOutput(int cycle) {
       arr3_double by = EMf->getByTot();//EMf->getBycWithGhost();
       arr3_double bz = EMf->getBzTot();//EMf->getBzcWithGhost();
       const int len = (nxc-2)*(nyc-2)*(nzc-2)*3;
-      const double firstB = EMf->getBxTot(1,1,1);dprintf("firstB %f", firstB);
-      double writebuffer[len];
+      const double firstB = EMf->getBxTot(1,1,1);
+      double writebuffer[nzc-2][nyc-2][nxc-2][3];
       int tmpid=0;
-	  for(int ix= 0;ix<nxc-2;ix++)
+	  for(int iz=0;iz<nzc-2;iz++)
 		  for(int iy=0;iy<nyc-2;iy++)
-			  for(int iz=0;iz<nzc-2;iz++){
-				  tmpid = ix*((nyc-2)*(nzc-2)*3) + iy*((nzc-2)*3) + iz*3;
-				  writebuffer[tmpid + 0]=EMf->getBxTot(ix+1,iy+1,iz+1);//(bx[ix+1][iy+1][iz+1]);
-				  writebuffer[tmpid + 1]=EMf->getBxTot(ix+1,iy+1,iz+1);//(by[ix+1][iy+1][iz+1]);
-				  writebuffer[tmpid + 2]=EMf->getBxTot(ix+1,iy+1,iz+1);//(bz[ix+1][iy+1][iz+1]);//dprintf("writebuffer[ix][iy][iz][2] %i %i %i tmpid%i %f",ix,iy,iz,tmpid,writebuffer[tmpid]);
+			  for(int ix= 0;ix<nxc-2;ix++){
+				  //tmpid = ix*((nyc-2)*(nzc-2)*3) + iy*((nzc-2)*3) + iz*3;
+				  writebuffer[iz][iy][ix][0]=EMf->getBxTot(ix+1,iy+1,iz+1);//(bx[ix+1][iy+1][iz+1]);
+				  writebuffer[iz][iy][ix][1]=0;//(by[ix+1][iy+1][iz+1]);
+				  writebuffer[iz][iy][ix][2]=0;//(bz[ix+1][iy+1][iz+1]);//dprintf("writebuffer[ix][iy][iz][2] %i %i %i tmpid%i %f",ix,iy,iz,tmpid,writebuffer[tmpid]);
 			  }
 
+	  dprintf("Finish initializing");
 	  int TestEndian = 1;
 	  int islittleEndian =*(char*)&TestEndian;
 	  if(islittleEndian){
-		  for(int id= 0;id<len;id++){
-			   ByteSwap((unsigned char*) &writebuffer[id],8);
-		   }
+//		  for(int id= 0;id<len;id++){
+//			   ByteSwap((unsigned char*) &writebuffer[id],8);
+//		   }
+		  for(int iz=0;iz<nzc-2;iz++)
+			  for(int iy=0;iy<nyc-2;iy++)
+				  for(int ix= 0;ix<nxc-2;ix++){
+					  ByteSwap((unsigned char*) &writebuffer[iz][iy][ix][0],8);
+					  ByteSwap((unsigned char*) &writebuffer[iz][iy][ix][1],8);
+					  ByteSwap((unsigned char*) &writebuffer[iz][iy][ix][2],8);
+				  }
 		   dprintf("islittleEndian, finish converting");
 	   }
       
@@ -734,9 +742,9 @@ void c_Solver::WriteOutput(int cycle) {
           }
       }
       //err = MPI_File_write_all(fh, writebuffer,len,MPI_DOUBLE, &status);//test->fetch_arr3()
-      err = MPI_File_write_all(fh, writebuffer,len,MPI_DOUBLE, &status);//test->fetch_arr3()
+      err = MPI_File_write_all(fh, writebuffer[0][0][0],len,MPI_DOUBLE, &status);//test->fetch_arr3()
       int tcount=0;
-      MPI_Get_count(&status, testview, &tcount);
+      MPI_Get_count(&status, MPI_DOUBLE, &tcount);
 	  dprintf(" wrote %i",  tcount);
       if(err){
           dprintf("Error in write1\n");
