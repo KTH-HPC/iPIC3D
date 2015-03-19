@@ -675,7 +675,7 @@ void c_Solver::WriteOutput(int cycle) {
       MPI_Type_commit(&procview);
       
       //Write VTK header B
-       sprintf(header, "# vtk DataFile Version 1.0\n"
+       sprintf(header, "# vtk DataFile Version 2.0\n"
        "Magnetic Field from iPIC3D\n"
        "BINARY\n"
        "DATASET STRUCTURED_POINTS\n"
@@ -718,7 +718,8 @@ void c_Solver::WriteOutput(int cycle) {
       
       
       //err = MPI_File_set_view(fh, disp, etype, procview, "native", MPI_INFO_NULL);
-      err = MPI_File_set_view(fh, disp, MPI_DOUBLE, testview, "native", MPI_INFO_NULL);
+      //err = MPI_File_set_view(fh, disp, MPI_DOUBLE, testview, "native", MPI_INFO_NULL);
+      err = MPI_File_set_view(fh, disp, MPI_DOUBLE, MPI_DOUBLE, "native", MPI_INFO_NULL);
       if(err){
           dprintf("Error in MPI_File_set_view\n");
           
@@ -732,12 +733,13 @@ void c_Solver::WriteOutput(int cycle) {
               dprintf("Error %s\n", error_string);
           }
       }
+      //err = MPI_File_write_all(fh, writebuffer,len,MPI_DOUBLE, &status);//test->fetch_arr3()
       err = MPI_File_write_all(fh, writebuffer,len,MPI_DOUBLE, &status);//test->fetch_arr3()
+      int tcount=0;
+      MPI_Get_count(&status, testview, &tcount);
+	  dprintf(" wrote %i",  tcount);
       if(err){
           dprintf("Error in write1\n");
-          int tcount=0;
-          MPI_Get_count(&status, testview, &tcount);
-          dprintf(" wrote %i",  tcount);
           int error_code = status.MPI_ERROR;
           if (error_code != MPI_SUCCESS) {
               char error_string[100];
