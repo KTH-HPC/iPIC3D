@@ -20,4 +20,8 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf,       Collective *col, VCtopolo
 
 void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, Particles3Dcomm *part, CollectiveIO *col, VCtopology3D *vct, int cycle);
 
+
+void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, int cycle);
+void WritePartclVTK(int nspec, Grid3DCU *grid, Particles3Dcomm *part, CollectiveIO *col, VCtopology3D *vct, int cycle);
+void ByteSwap(unsigned char * b, int n);
 #endif

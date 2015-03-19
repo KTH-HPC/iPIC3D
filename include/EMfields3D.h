@@ -191,12 +191,12 @@ class EMfields3D                // :public Field
 
     // field components without ghost cells
     //
-    arr3_double getExc();
-    arr3_double getEyc();
-    arr3_double getEzc();
-    arr3_double getBxc();
-    arr3_double getByc();
-    arr3_double getBzc();
+//    arr3_double getExc();
+//    arr3_double getEyc();
+//    arr3_double getEzc();
+//    arr3_double getBxc();
+//    arr3_double getByc();
+//    arr3_double getBzc();
     
     //for parallel vtk
     arr3_double getBxcWithGhost(){return Bxc;};
@@ -216,7 +216,7 @@ class EMfields3D                // :public Field
     double*** getRHOns(int is){return &rhons[is][0];}
     arr4_double getRHOns(){return rhons;}
     /* density on cells without ghost cells */
-    arr3_double getRHOcs(int is);
+    //arr3_double getRHOcs(int is);
 
     double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
     double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
@@ -260,9 +260,9 @@ class EMfields3D                // :public Field
 
     // get current for species in all cells except ghost
     //
-    arr3_double getJxsc(int is);
-    arr3_double getJysc(int is);
-    arr3_double getJzsc(int is);
+//    arr3_double getJxsc(int is);
+//    arr3_double getJysc(int is);
+//    arr3_double getJzsc(int is);
 
     /*! get the electric field energy */
     double getEenergy();
@@ -296,7 +296,13 @@ class EMfields3D                // :public Field
     MPI_Datatype getZEdgetype2(bool isCenterFlag){return  isCenterFlag ?zEdgetypeC2 : zEdgetypeN2;}
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
+
+    MPI_Datatype getGhosttype(){return  ghosttype;}
+    MPI_Datatype getProcview(){return  procview;}
+    MPI_Datatype getHeaderview(){return  headerview;}
+
     void freeDataType();
+    bool isLittleEndian(){return lEndFlag;};
 
   public: // accessors
     const Collective& get_col()const{return _col;}
@@ -426,7 +432,7 @@ class EMfields3D                // :public Field
     array3_double vectY;
     array3_double vectZ;
     array3_double divC;
-    array3_double arr;
+    //array3_double arr;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments10 **moments10Array;
@@ -558,6 +564,9 @@ class EMfields3D                // :public Field
     MPI_Datatype zEdgetypeN2;
     MPI_Datatype cornertypeN;
     
+    //for VTK output
+    MPI_Datatype  ghosttype, procview, headerview;
+    bool lEndFlag;
     
     injInfoFields* get_InfoFieldsLeft();
     injInfoFields* get_InfoFieldsTop();
