@@ -622,8 +622,10 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
   { timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING); }
 
   // The local average number of PC iterations
-  // The sum over all processes of the avg. numb. of PC iter.
-  //double innter_sum = 0.0,subcycle_sum=0.0;
+  // The sum over all processes of the avg. numb. of PC iter
+#ifdef PRINTPCL
+  double innter_sum = 0.0,subcycle_sum=0.0;
+#endif
 
   const double PC_err = 1E-6;
 
@@ -655,14 +657,16 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  dt_sub = dt/double(sub_cycles);
 	  double dto2_sub = .5 * dt_sub, qdto2mc_sub = qom*dto2_sub/c;
 
-	  //subcycle_sum += sub_cycles;
-	  //double innter_avg = 0.0;
+#ifdef PRINTPCL
+	  subcycle_sum += sub_cycles;
+	  double innter_avg = 0.0;
+#endif
 
 	  //start subcycling
 	  for(int cyc_cnt=0;cyc_cnt<sub_cycles;cyc_cnt++)
 	  {
 
-	    const double xorig = pcl->get_x();
+		    const double xorig = pcl->get_x();
        	    const double yorig = pcl->get_y();
        	    const double zorig = pcl->get_z();
        	    const double uorig = pcl->get_u();
@@ -750,10 +754,11 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 					     (uavg_old*uavg_old+vavg_old*vavg_old+wavg_old*wavg_old);
 				  innter++;
             }  // end of iteration
-            //innter_avg += innter;
+#ifdef PRINTPCL
+            innter_avg += innter;
+#endif
 
-
-             	    // relativistic velocity update
+            // relativistic velocity update
 		    ut = uorig*gamma0;
 		    vt = vorig*gamma0;
 		    wt = worig*gamma0;
@@ -785,9 +790,9 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 		    pcl->set_z(zorig + wavg * dt_sub);
 
 	  }//END OF subcycling
-
-	  //innter_sum += innter_avg/sub_cycles;
-
+#ifdef PRINTPCL
+	  innter_sum += innter_avg/sub_cycles;
+#endif
   }// END OF ALL THE PARTICLES
 
 
@@ -795,7 +800,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
   {
 	  timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
 
-	  /*
+#ifdef PRINTPCL
 	  double local_subcycle = subcycle_sum/getNOP();
 	  double local_innter   = innter_sum/getNOP();
 	  double localAvgArr[2];
@@ -806,7 +811,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  if (MPIdata::get_rank() == 0)
 		  cout << "*** Relativistic AoS MOVER with Subcycling  species " << ns << " ***" 
 		  << globalAvgArr[0]/MPIdata::get_nprocs()  << " subcyles ***" << globalAvgArr[1]/MPIdata::get_nprocs()<< " ITERATIONS   ****" << endl;
-	  */
+#endif
   }
 }
 
