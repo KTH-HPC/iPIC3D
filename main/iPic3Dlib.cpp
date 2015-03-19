@@ -19,7 +19,20 @@
 #include "WriteOutputParallel.h"
 #include "OutputWrapperFPP.h"
 #endif
-//
+
+
+#include <algorithm> //required for std::swap
+void ByteSwap(unsigned char * b, int n)
+{
+   register int i = 0;
+   register int j = n-1;
+   while (i<j)
+   {
+      std::swap(b[i], b[j]);
+      i++, j--;
+   }
+}
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -567,34 +580,60 @@ void c_Solver::WriteOutput(int cycle) {
        */
       if (col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)
           return;
-      
+
+      dprintf("Enter parallel VTK");
+
       //parallel VTK for B at cells
       int  size[3], subsize[3], start[3], err;
       const int nxc =grid->getNXC(),nyc=grid->getNYC(),nzc=grid->getNZC();
       const int xLen =vct->getXLEN(), yLen =vct->getYLEN(),zLen =vct->getZLEN();
-      
-      int writebuffer[nxc][nyc][nzc];
-      for(int ix= 0;ix<nxc;ix++)
-          for(int iy=0;iy<nyc;iy++)
-              for(int iz=0;iz<nzc;iz++)
-                  writebuffer[ix][iy][iz]=myrank+1111;
-      
-      MPI_Datatype  etype = MPI_INT;
-      MPI_Datatype  proc2dsubarr, ghost2dsubarr;
+      MPI_Datatype  procview, ghosttype;
       MPI_File      fh;
       char   header[1024];
       MPI_Status    status;
       
+      //convert little Endian to Big Endian
+      arr3_double bx = EMf->getBxTot();//EMf->getBxcWithGhost();
+      arr3_double by = EMf->getByTot();//EMf->getBycWithGhost();
+      arr3_double bz = EMf->getBzTot();//EMf->getBzcWithGhost();
+      const int len = (nxc-2)*(nyc-2)*(nzc-2)*3;
+      const double firstB = EMf->getBxTot(1,1,1);dprintf("firstB %f", firstB);
+      double writebuffer[len];
+      int tmpid=0;
+	  for(int ix= 0;ix<nxc-2;ix++)
+		  for(int iy=0;iy<nyc-2;iy++)
+			  for(int iz=0;iz<nzc-2;iz++){
+				  tmpid = ix*((nyc-2)*(nzc-2)*3) + iy*((nzc-2)*3) + iz*3;
+				  writebuffer[tmpid + 0]=EMf->getBxTot(ix+1,iy+1,iz+1);//(bx[ix+1][iy+1][iz+1]);
+				  writebuffer[tmpid + 1]=EMf->getBxTot(ix+1,iy+1,iz+1);//(by[ix+1][iy+1][iz+1]);
+				  writebuffer[tmpid + 2]=EMf->getBxTot(ix+1,iy+1,iz+1);//(bz[ix+1][iy+1][iz+1]);//dprintf("writebuffer[ix][iy][iz][2] %i %i %i tmpid%i %f",ix,iy,iz,tmpid,writebuffer[tmpid]);
+			  }
+
+	  int TestEndian = 1;
+	  int islittleEndian =*(char*)&TestEndian;
+	  if(islittleEndian){
+		  for(int id= 0;id<len;id++){
+			   ByteSwap((unsigned char*) &writebuffer[id],8);
+		   }
+		   dprintf("islittleEndian, finish converting");
+	   }
       
       //create local subarray to exclude ghost cells
       size[0] = nxc;size[1] = nyc;size[2] = nzc;
       subsize[0] = nxc-2;subsize[1] = nyc-2;subsize[2] = nzc-2;
       start[0]=1;start[1]=1;start[2]=1;
-      
       dprintf("ghost2dsubarr size %i %i %i \n", size[0], size[1], size[2]);
       dprintf("ghost2dsubarr subsize %i %i %i \n", subsize[0], subsize[1], subsize[2]);
       dprintf("ghost2dsubarr start %i %i %i \n", start[0], start[1], start[2]);
-      err=MPI_Type_create_subarray(3, size, subsize, start, MPI_ORDER_C, etype, &ghost2dsubarr);
+
+      MPI_Datatype  testview;//=MPI_DOUBLE;
+      MPI_Type_contiguous(nxc*nyc*nzc*3,MPI_DOUBLE, &testview);
+      MPI_Type_commit(&testview);
+
+      MPI_Datatype  etype;//=MPI_DOUBLE;
+      MPI_Type_contiguous(3,MPI_DOUBLE, &etype);
+      MPI_Type_commit(&etype);
+      err=MPI_Type_create_subarray(3, size, subsize, start, MPI_ORDER_C, etype, &ghosttype);
       if(err){
           dprintf("Error in ghost2dsubarr\n");
           
@@ -608,21 +647,18 @@ void c_Solver::WriteOutput(int cycle) {
               dprintf("Error %s\n", error_string);
           }
       }
-      MPI_Type_commit(&ghost2dsubarr);
-      
+      MPI_Type_commit(&ghosttype);
       
       //create process file view
-      size[0] = (nxc-2)*xLen*3;size[1] = (nyc-2)*yLen;size[2] = (nzc-2)*zLen;
-      start[0]= vct->getCoordinates(0)*subsize[0]*3;
+      size[0] = (nxc-2)*xLen;size[1] = (nyc-2)*yLen;size[2] = (nzc-2)*zLen;
+      start[0]= vct->getCoordinates(0)*subsize[0];
       start[1]= vct->getCoordinates(1)*subsize[1];
       start[2]= vct->getCoordinates(2)*subsize[2];
-      subsize[0] *=3;
-      
       dprintf("proc2dsubarr size %i %i %i \n",    size[0], size[1], size[2]);
       dprintf("proc2dsubarr subsize %i %i %i \n", subsize[0], subsize[1], subsize[2]);
-      dprintf("proc2dsubarr start %i %i %i \n", start[0], start[1], start[2]);
+      dprintf("proc2dsubarr start %i %i %i \n",   start[0], start[1], start[2]);
       
-      err=MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, etype, &proc2dsubarr);
+      err=MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, etype, &procview);
       if(err){
           dprintf("Error in proc2dsubarr\n");
           
@@ -636,9 +672,9 @@ void c_Solver::WriteOutput(int cycle) {
               dprintf("Error %s\n", error_string);
           }
       }
-      MPI_Type_commit(&proc2dsubarr);
+      MPI_Type_commit(&procview);
       
-      /* Write VTK header B
+      //Write VTK header B
        sprintf(header, "# vtk DataFile Version 1.0\n"
        "Magnetic Field from iPIC3D\n"
        "BINARY\n"
@@ -647,49 +683,13 @@ void c_Solver::WriteOutput(int cycle) {
        "ORIGIN 0 0 0\n"
        "SPACING %f %f %f\n"
        "POINT_DATA %d \n"
-       "VECTORS B unsigned_int\n", size[0]/3 ,size[1]/3,size[2]/3,grid->getDX(),grid->getDY(),grid->getDZ(),size[0]*size[1]*size[2]/27);
-       ofstream my_file("test123.vtk");*/
-      sprintf(header, "# vtk DataFile Version 1.0\n"
-              "Magnetic Field from iPIC3D\n"
-              "BINARY\n"
-              "DATASET STRUCTURED_POINTS\n"
-              "DIMENSIONS 12 6 1\n"
-              "ORIGIN 0 0 0\n"
-              "SPACING 1 1 1\n"
-              "POINT_DATA 72\n"
-              "VECTORS B INT\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3\n"
-              //				"1.1\n"
-              //				"2.2\n"
-              //				"3.3"
-              );
-      //my_file.close();
-      
+       "VECTORS B double\n", size[0],size[1],size[2],grid->getDX(),grid->getDY(),grid->getDZ(),size[0]*size[1]*size[2]);
+
       int nelem = strlen(header);
       int charsize=sizeof(char);
+      MPI_Offset disp = nelem*charsize;
       
-      MPI_Offset    disp = nelem*charsize;
-      
+      /*
       dprintf("disp %i nelem %i charsize %i",disp ,nelem, charsize);
       
       MPI_Type_size(MPI_DOUBLE, &charsize);
@@ -700,28 +700,25 @@ void c_Solver::WriteOutput(int cycle) {
       
       MPI_Type_size(MPI_INT, &charsize);
       dprintf("MPI_INT size %i", charsize);
-      
-      //test endianality
-      //Return 1 if the current architecture has little endian order
-      int TestEndian = 1;
-      int islittleEndian =  *(char*)&TestEndian;
-      dprintf("islittleEndian %i", islittleEndian);
-      
+       */
+
       MPI_Datatype  headertype;
-      MPI_Type_contiguous(disp,MPI_BYTE, &headertype);
+      MPI_Type_contiguous(disp, MPI_BYTE, &headertype);
       MPI_Type_commit(&headertype);
       
-      MPI_File_open(vct->getComm(), "headeronly.vtk", MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
-      /*
-       MPI_File_set_view(fh, 0, MPI_BYTE, headertype, "native", MPI_INFO_NULL);
-       if (vct->getCartesian_rank()==0){
-       MPI_File_write(fh, header, nelem, MPI_BYTE, &status);
-       }
-       dprintf("rank 0 write header");*/
+      ostringstream filename;
+      filename << col->getSaveDirName() << "/" << col->getSimName() << "_B_" << cycle << ".vtk";
+      MPI_File_open(vct->getComm(),filename.str().c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+
+      MPI_File_set_view(fh, 0, MPI_BYTE, headertype, "native", MPI_INFO_NULL);
+      if (vct->getCartesian_rank()==0){
+    	  MPI_File_write(fh, header, nelem, MPI_BYTE, &status);
+      }
       former_MPI_Barrier(MPI_COMM_WORLD);
       
       
-      err = MPI_File_set_view(fh, 0, etype, proc2dsubarr, "native", MPI_INFO_NULL);// MPI_DISPLACEMENT_CURRENT
+      //err = MPI_File_set_view(fh, disp, etype, procview, "native", MPI_INFO_NULL);
+      err = MPI_File_set_view(fh, disp, MPI_DOUBLE, testview, "native", MPI_INFO_NULL);
       if(err){
           dprintf("Error in MPI_File_set_view\n");
           
@@ -735,46 +732,11 @@ void c_Solver::WriteOutput(int cycle) {
               dprintf("Error %s\n", error_string);
           }
       }
-      
-      arr3_double *test= EMf->getBxcWithGhost();
-      
-      err = MPI_File_write_all(fh, writebuffer,1, ghost2dsubarr, &status);//test->fetch_arr3()
+      err = MPI_File_write_all(fh, writebuffer,len,MPI_DOUBLE, &status);//test->fetch_arr3()
       if(err){
           dprintf("Error in write1\n");
           int tcount=0;
-          MPI_Get_count(&status, ghost2dsubarr, &tcount);
-          dprintf(" wrote %i",  tcount);
-          int error_code = status.MPI_ERROR;
-          if (error_code != MPI_SUCCESS) {
-              char error_string[100];
-              int length_of_error_string, error_class;
-              
-              MPI_Error_class(error_code, &error_class);
-              MPI_Error_string(error_class, error_string, &length_of_error_string);
-              dprintf("Error %s\n", error_string);
-          }
-      }
-      err = MPI_File_write_all(fh, writebuffer,1, ghost2dsubarr, &status);//test->fetch_arr3()
-      if(err){
-          dprintf("Error in write2\n");
-          int tcount=0;
-          MPI_Get_count(&status, ghost2dsubarr, &tcount);
-          dprintf(" wrote %i",  tcount);
-          int error_code = status.MPI_ERROR;
-          if (error_code != MPI_SUCCESS) {
-              char error_string[100];
-              int length_of_error_string, error_class;
-              
-              MPI_Error_class(error_code, &error_class);
-              MPI_Error_string(error_class, error_string, &length_of_error_string);
-              dprintf("Error %s\n", error_string);
-          }
-      }
-      err = MPI_File_write_all(fh, writebuffer,1, ghost2dsubarr, &status);//test->fetch_arr3()
-      if(err){
-          dprintf("Error in write 3\n");
-          int tcount=0;
-          MPI_Get_count(&status, ghost2dsubarr, &tcount);
+          MPI_Get_count(&status, testview, &tcount);
           dprintf(" wrote %i",  tcount);
           int error_code = status.MPI_ERROR;
           if (error_code != MPI_SUCCESS) {
@@ -787,10 +749,13 @@ void c_Solver::WriteOutput(int cycle) {
           }
       }
       
-      MPI_Type_free(&proc2dsubarr);
-      MPI_Type_free(&ghost2dsubarr);
+      MPI_Type_free(&procview);
+      MPI_Type_free(&ghosttype);
+      MPI_Type_free(&headertype);
+      MPI_Type_free(&etype);
       
       MPI_File_close(&fh);
+      dprintf("Exit parallel VTK");
   }
   else if (col->getWriteMethod() == "default")
   {

@@ -199,7 +199,9 @@ class EMfields3D                // :public Field
     arr3_double getBzc();
     
     //for parallel vtk
-    arr3_double* getBxcWithGhost(){return &Bxc;};
+    arr3_double getBxcWithGhost(){return Bxc;};
+    arr3_double getBycWithGhost(){return Byc;};
+    arr3_double getBzcWithGhost(){return Bzc;};
 
 
     arr3_double getRHOc() { return rhoc; }

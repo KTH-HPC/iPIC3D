@@ -4116,11 +4116,11 @@ void EMfields3D::initDipole()
 
 	grid->interpN2C(Bxc,Bxn);
 	grid->interpN2C(Byc,Byn);
-	grid->interpN2C(Bzc,Bzn);
+	grid->interpN2C(Bzc,Bzn);dprintf("1 Bzc[1][15][0]=%f",Bzc[1][15][0]);
 
 	communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct, this);
 	communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct, this);
-	communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct, this);
+	communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct, this);dprintf("2 Bzc[1][15][0]=%f",Bzc[1][15][0]);
 
 	for (int is=0 ; is<ns; is++)
 		grid->interpN2C(rhocs,is,rhons);

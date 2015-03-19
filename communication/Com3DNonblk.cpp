@@ -13,7 +13,7 @@
 //isCenterFlag: 1 communicateCenter; 0 communicateNode
 void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct, EMfields3D *EMf,bool isCenterFlag, bool isFaceOnlyFlag, bool needInterp)
 {
-    timeTasks_set_communicating();
+  // timeTasks_set_communicating();
 
     MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
     MPI_Status  stat[12];
