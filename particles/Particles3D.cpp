@@ -335,6 +335,8 @@ void Particles3D::mover_explicit(Field * EMf) {
 //
 /** mover with a Predictor-Corrector scheme */
 void Particles3D::mover_PC(Field * EMf) {
+#pragma omp parallel
+{
   convertParticlesToSoA();
   #pragma omp master
   if (vct->getCartesian_rank() == 0) {
@@ -484,10 +486,12 @@ void Particles3D::mover_PC(Field * EMf) {
     fetchV(pidx) = 2.0 * vavg - vorig;
     fetchW(pidx) = 2.0 * wavg - worig;
   }                             // END OF ALL THE PARTICLES
-  
+}
 }
 
 void Particles3D::mover_PC_AoS(Field * EMf)
+{
+#pragma omp parallel
 {
   convertParticlesToAoS();
   #pragma omp master
@@ -608,12 +612,19 @@ void Particles3D::mover_PC_AoS(Field * EMf)
     pcl->set_v(2.0 * vavg - vorig);
     pcl->set_w(2.0 * wavg - worig);
   }                             // END OF ALL THE PARTICLES
- 
+}
 }
 
 
 
 void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
+{
+    // The local average number of PC iterations
+	// The sum over all processes of the avg. numb. of PC iter
+	#ifdef PRINTPCL
+	  double innter_sum = 0.0,subcycle_sum=0.0;
+	#endif
+#pragma omp parallel
 {
   convertParticlesToAoS();
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
@@ -621,16 +632,17 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
   #pragma omp master
   { timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING); }
 
-  // The local average number of PC iterations
-  // The sum over all processes of the avg. numb. of PC iter
-#ifdef PRINTPCL
-  double innter_sum = 0.0,subcycle_sum=0.0;
-#endif
 
   const double PC_err = 1E-6;
+  const int    nop=getNOP(); //for OpenMP
+  int 		   pidx = 0;      //for OpenMP
 
-#pragma omp for schedule(static) //reduction(+:innter_sum,subcycle_sum)
-  for (int pidx = 0; pidx < getNOP(); pidx++) {
+#ifdef PRINTPCL
+	#pragma omp for schedule(static) reduction(+:innter_sum,subcycle_sum)
+#else
+	#pragma omp for schedule(static)
+#endif
+  for (pidx = 0; pidx < nop; pidx++) {
 
 	  // copy the particle
 	  SpeciesParticle* pcl = &_pcls[pidx];
@@ -682,10 +694,10 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
        	    double gamma1;
        	    pfloat ut,vt,wt;
 
-            int innter = 0;           // Count number of PC iterations
+            int innter = 0;
             double currErr = PC_err+1;//initialize to a larger value
 
-	    // calculate the average velocity iteratively
+            // calculate the average velocity iteratively
             while(currErr> PC_err*PC_err &&  innter < NiterMover){
 
 				  // Save old v_avg
@@ -801,8 +813,8 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
 
 #ifdef PRINTPCL
-	  double local_subcycle = subcycle_sum/getNOP();
-	  double local_innter   = innter_sum/getNOP();
+	  double local_subcycle = subcycle_sum/nop;
+	  double local_innter   = innter_sum/nop;
 	  double localAvgArr[2];
 	  localAvgArr[0]=local_subcycle;
 	  localAvgArr[1]=local_innter;
@@ -813,6 +825,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 		  << globalAvgArr[0]/MPIdata::get_nprocs()  << " subcyles ***" << globalAvgArr[1]/MPIdata::get_nprocs()<< " ITERATIONS   ****" << endl;
 #endif
   }
+}
 }
 
 
@@ -825,9 +838,12 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 void Particles3D::mover_PC_AoS_vec_intr(Field * EMf)
 {
  #ifndef __MIC__
-  //eprintf("not implemented");
-  mover_PC_AoS(EMf);
+	   if (MPIdata::get_rank() == 0)
+			  cout << "*** MIC not enabled, switch to AoS mover " <<endl;
+   	   mover_PC_AoS(EMf);
  #else
+ #pragma omp parallel
+ {
   convertParticlesToAoS();
   // Here and below x stands for all 3 physical position coordinates
   // and u stands for all 3 velocity coordinates.
@@ -945,10 +961,13 @@ void Particles3D::mover_PC_AoS_vec_intr(Field * EMf)
   }
   #pragma omp master
   { timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING); }
+ }
  #endif
 }
 
 void Particles3D::mover_PC_AoS_vec(Field * EMf)
+{
+#pragma omp parallel
 {
   convertParticlesToAoS();
   #pragma omp master
@@ -1083,6 +1102,7 @@ void Particles3D::mover_PC_AoS_vec(Field * EMf)
   }
   #pragma omp master
   { timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING); }
+}
 }
 
 // This currently computes extrapolated values based on field in

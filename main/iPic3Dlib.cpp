@@ -297,8 +297,6 @@ bool c_Solver::ParticlesMover()
 
     pad_particle_capacities();
 
-    #pragma omp parallel
-    {
     for (int i = 0; i < ns; i++)  // move each species
     {
       // #pragma omp task inout(part[i]) in(grid) target_device(booster)
@@ -309,9 +307,6 @@ bool c_Solver::ParticlesMover()
         case Parameters::SoA:
           part[i].mover_PC(EMf);
           break;
-        //case Parameters::SoA_vec_resort:
-        //  part[i].mover_PC_vectorized(EMf);
-        //  break;
         case Parameters::AoS:
           part[i].mover_PC_AoS(EMf);
           break;
@@ -324,21 +319,17 @@ bool c_Solver::ParticlesMover()
         case Parameters::AoSvec:
           part[i].mover_PC_AoS_vec(EMf);
           break;
-        //case Parameters::AoS_vec_onesort:
-        //  part[i].mover_PC_AoS_vec_onesort(EMf);
-        //  break;
         default:
           unsupported_value_error(Parameters::get_MOVER_TYPE());
       }
-      // overlap initial communication of electrons with moving of ions
-      #pragma omp master
-      {
-    	  //Should integrate BC into separate_and_send_particles
-    	  part[i].openbc_particles();
-    	  part[i].separate_and_send_particles();
-      }
+
+	  //Should integrate BC into separate_and_send_particles
+	  part[i].openbc_particles();
+	  part[i].separate_and_send_particles();
+
     }
-    }//End of omp parallel
+
+
     for (int i = 0; i < ns; i++)  // communicate each species
     {
       //part[i].communicate_particles();
@@ -811,7 +802,6 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  EMf->freeDataType();
   if (col->getCallFinalize())
   {
     #ifndef NO_HDF5

@@ -5039,4 +5039,5 @@ EMfields3D::~EMfields3D() {
   delete injFieldsRear;
   for(int i=0;i<sizeMomentsArray;i++) { delete moments10Array[i]; }
   delete [] moments10Array;
+  freeDataType();
 }
