@@ -1,5 +1,0 @@
-build*
-.project
-.*cproject
-.settings*
-Debug*
