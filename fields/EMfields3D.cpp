@@ -320,6 +320,29 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     MPI_Type_commit(&cornertypeN);
 
 }
+void EMfields3D::freeDataType(){
+	MPI_Type_free(&yzFacetypeC);
+    MPI_Type_free(&xzFacetypeC);
+    MPI_Type_free(&xyFacetypeC);
+    MPI_Type_free(&xEdgetypeC);
+    MPI_Type_free(&yEdgetypeC);
+    MPI_Type_free(&zEdgetypeC);
+    MPI_Type_free(&xEdgetypeC2);
+    MPI_Type_free(&yEdgetypeC2);
+    MPI_Type_free(&zEdgetypeC2);
+    MPI_Type_free(&cornertypeC);
+
+    MPI_Type_free(&yzFacetypeN);
+    MPI_Type_free(&xzFacetypeN);
+    MPI_Type_free(&xyFacetypeN);
+    MPI_Type_free(&xEdgetypeN);
+    MPI_Type_free(&yEdgetypeN);
+    MPI_Type_free(&zEdgetypeN);
+    MPI_Type_free(&xEdgetypeN2);
+    MPI_Type_free(&yEdgetypeN2);
+    MPI_Type_free(&zEdgetypeN2);
+    MPI_Type_free(&cornertypeN);
+}
 
 // This was Particles3Dcomm::interpP2G()
 void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls)
