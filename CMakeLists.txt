@@ -32,7 +32,7 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
      set(CMAKE_CXX_COMPILER "icpc")  
    endif()
    #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
-   set(CMAKE_CXX_FLAGS "-O3") # -DPRINTPCL for printing particle subcycles
+   set(CMAKE_CXX_FLAGS  "-O3  -DPRINTPCL") # -DPRINTPCL for printing particle subcycles  
 else()
    set(CMAKE_CXX_FLAGS "-O3")
 endif()

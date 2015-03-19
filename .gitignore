@@ -1,5 +1,5 @@
-*build*/
-Debug*
+build*
 .cproject
 .project
-.settings*
+.settings
+Debug*
