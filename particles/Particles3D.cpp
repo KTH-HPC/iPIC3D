@@ -628,9 +628,15 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 #endif
 
   const double PC_err = 1E-6;
+  const int    nop=getNOP(); //for OpenMP
+  int 		   pidx = 0;      //for OpenMP
 
-#pragma omp for schedule(static) //reduction(+:innter_sum,subcycle_sum)
-  for (int pidx = 0; pidx < getNOP(); pidx++) {
+#ifdef PRINTPCL
+	#pragma omp for schedule(static) reduction(+:innter_sum,subcycle_sum)
+#else
+	#pragma omp for schedule(static)
+#endif
+  for (pidx = 0; pidx < nop; pidx++) {
 
 	  // copy the particle
 	  SpeciesParticle* pcl = &_pcls[pidx];
@@ -682,10 +688,10 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
        	    double gamma1;
        	    pfloat ut,vt,wt;
 
-            int innter = 0;           // Count number of PC iterations
+            int innter = 0;
             double currErr = PC_err+1;//initialize to a larger value
 
-	    // calculate the average velocity iteratively
+            // calculate the average velocity iteratively
             while(currErr> PC_err*PC_err &&  innter < NiterMover){
 
 				  // Save old v_avg
@@ -801,8 +807,8 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
 
 #ifdef PRINTPCL
-	  double local_subcycle = subcycle_sum/getNOP();
-	  double local_innter   = innter_sum/getNOP();
+	  double local_subcycle = subcycle_sum/nop;
+	  double local_innter   = innter_sum/nop;
 	  double localAvgArr[2];
 	  localAvgArr[0]=local_subcycle;
 	  localAvgArr[1]=local_innter;
