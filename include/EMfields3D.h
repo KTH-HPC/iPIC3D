@@ -294,6 +294,8 @@ class EMfields3D                // :public Field
     MPI_Datatype getZEdgetype2(bool isCenterFlag){return  isCenterFlag ?zEdgetypeC2 : zEdgetypeN2;}
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
+    void freeDataType();
+
   public: // accessors
     const Collective& get_col()const{return _col;}
     const Grid& get_grid()const{return _grid;};

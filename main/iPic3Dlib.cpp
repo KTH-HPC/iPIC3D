@@ -811,6 +811,7 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
+  EMf->freeDataType();
   if (col->getCallFinalize())
   {
     #ifndef NO_HDF5
