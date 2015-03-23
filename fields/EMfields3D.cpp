@@ -319,8 +319,35 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     MPI_Type_commit(&cornertypeN);
 
     if (col->getWriteMethod() == "pvtk"){
+    	//test Endian
     	int TestEndian = 1;
     	lEndFlag =*(char*)&TestEndian;
+
+    	 //create process file view
+		  int  size[3], subsize[3], start[3];
+
+//		  3D subarray
+		  subsize[0] = nxc-2; subsize[1] = nyc-2; subsize[2]=(nzc-2);
+		  size[0] = (nxc-2)*vct->getXLEN();size[1] = (nyc-2)*vct->getYLEN();size[2] = (nzc-2)*vct->getZLEN();
+		  start[0]= vct->getCoordinates(0)*subsize[0];
+		  start[1]= vct->getCoordinates(1)*subsize[1];
+		  start[2]= vct->getCoordinates(2)*subsize[2];
+
+		  MPI_Type_contiguous(3,MPI_DOUBLE, &xyzcomp);
+		  MPI_Type_commit(&xyzcomp);
+
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, xyzcomp, &procviewXYZ);
+		  MPI_Type_commit(&procviewXYZ);
+
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, MPI_DOUBLE, &procview);
+		  MPI_Type_commit(&procview);
+
+		  subsize[0] = nxc-2; subsize[1] = nyc-2; subsize[2]=nzc-2;
+		  size[0]    = nxc;	  size[1] =nyc;		  size[2] = nzc;
+		  start[0]=1;start[1]=1;start[2]=1;
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, MPI_DOUBLE, &ghosttype);
+		  MPI_Type_commit(&ghosttype);
+
     }
 
 }
@@ -346,6 +373,9 @@ void EMfields3D::freeDataType(){
     MPI_Type_free(&yEdgetypeN2);
     MPI_Type_free(&zEdgetypeN2);
     MPI_Type_free(&cornertypeN);
+
+    MPI_Type_free(&procview);
+    MPI_Type_free(&xyzcomp);
 }
 
 // This was Particles3Dcomm::interpP2G()

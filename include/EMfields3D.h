@@ -189,19 +189,11 @@ class EMfields3D                // :public Field
     arr3_double getBy() { return Byn; }
     arr3_double getBz() { return Bzn; }
 
-    // field components without ghost cells
-    //
-//    arr3_double getExc();
-//    arr3_double getEyc();
-//    arr3_double getEzc();
-//    arr3_double getBxc();
-//    arr3_double getByc();
-//    arr3_double getBzc();
     
     //for parallel vtk
-    arr3_double getBxcWithGhost(){return Bxc;};
-    arr3_double getBycWithGhost(){return Byc;};
-    arr3_double getBzcWithGhost(){return Bzc;};
+    arr3_double getBxc(){return Bxc;};
+    arr3_double getByc(){return Byc;};
+    arr3_double getBzc(){return Bzc;};
 
 
     arr3_double getRHOc() { return rhoc; }
@@ -213,10 +205,9 @@ class EMfields3D                // :public Field
     //
     double getRHOcs(int X,int Y,int Z,int is)const{return rhocs.get(is,X,Y,Z);}
     double getRHOns(int X,int Y,int Z,int is)const{return rhons.get(is,X,Y,Z);}
-    double*** getRHOns(int is){return &rhons[is][0];}
     arr4_double getRHOns(){return rhons;}
-    /* density on cells without ghost cells */
-    //arr3_double getRHOcs(int is);
+    arr4_double getRHOcs(){return rhocs;}
+
 
     double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
     double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
@@ -297,9 +288,9 @@ class EMfields3D                // :public Field
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
 
-    MPI_Datatype getGhosttype(){return  ghosttype;}
     MPI_Datatype getProcview(){return  procview;}
-    MPI_Datatype getHeaderview(){return  headerview;}
+    MPI_Datatype getProcviewXYZ(){return  procviewXYZ;}
+    MPI_Datatype getGhostType(){return  ghosttype;}
 
     void freeDataType();
     bool isLittleEndian(){return lEndFlag;};
@@ -565,7 +556,7 @@ class EMfields3D                // :public Field
     MPI_Datatype cornertypeN;
     
     //for VTK output
-    MPI_Datatype  ghosttype, procview, headerview;
+    MPI_Datatype  procviewXYZ,xyzcomp,procview,ghosttype;
     bool lEndFlag;
     
     injInfoFields* get_InfoFieldsLeft();

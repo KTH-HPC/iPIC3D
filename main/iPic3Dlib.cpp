@@ -560,7 +560,7 @@ void c_Solver::WriteOutput(int cycle) {
 	  WriteRestart(cycle);
 
 	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-		  WriteFieldsVTK(ns, grid, EMf, col, vct, cycle);
+		  WriteFieldsVTK(ns, grid, EMf, col, vct, "rhos",cycle);//Eall + Ball + Jsall
   }
   else if (col->getWriteMethod() == "default")
   {

@@ -15,7 +15,7 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 {
   // timeTasks_set_communicating();
 
-    MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
+    //MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
     MPI_Status  stat[12];
     MPI_Request reqList[12];				  //at most 6 requests x 2 (send recv)
     int communicationCnt[6] = {0,0,0,0,0,0};  //1 if there communication on that dir
