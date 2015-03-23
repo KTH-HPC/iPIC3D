@@ -560,7 +560,11 @@ void c_Solver::WriteOutput(int cycle) {
 	  WriteRestart(cycle);
 
 	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-		  WriteFieldsVTK(ns, grid, EMf, col, vct, "rhos",cycle);//Eall + Ball + Jsall
+		  WriteFieldsVTK(ns, grid, EMf, col, vct, "E + B + J + rho",cycle);//Jsall
+
+	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
+
   }
   else if (col->getWriteMethod() == "default")
   {
