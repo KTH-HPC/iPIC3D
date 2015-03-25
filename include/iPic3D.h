@@ -72,6 +72,7 @@ namespace iPic3D {
     Grid3DCU      *grid;
     EMfields3D    *EMf;
     Particles3D   *part;
+    Particles3D   *testpart;
     double        *Ke;
     double        *momentum;
     double        *Qremoved;
@@ -93,6 +94,7 @@ namespace iPic3D {
     int restart_status;
     int first_cycle;
     int ns;
+    int nstestpart;
     int nprocs;
     int myrank;
     int nsat;

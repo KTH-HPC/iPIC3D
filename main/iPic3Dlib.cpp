@@ -143,19 +143,14 @@ int c_Solver::Init(int argc, char **argv) {
   EMf->updateInfoFields();
 
   // Allocation of particles
-  // part = new Particles3D[ns];
   part = (Particles3D*) malloc(sizeof(Particles3D)*ns);
   for (int i = 0; i < ns; i++)
   {
     new(&part[i]) Particles3D(i,col,vct,grid);
-    //part[i] = new Particles3D(i, col, vct, grid);
-    //part[i].allocate(i, col, vct, grid);
   }
 
   // Initial Condition for PARTICLES if you are not starting from RESTART
   if (restart_status == 0) {
-    // wave = new Planewave(col, EMf, grid, vct);
-    // wave->Wave_Rotated(part); // Single Plane Wave
     for (int i = 0; i < ns; i++)
     {
       if      (col->getCase()=="ForceFree") part[i].force_free(EMf);
@@ -167,11 +162,24 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  //allocate test particles if any
+  nstestpart = col->getNsTestPart();
+  if(nstestpart>0){
+	  dprintf("Initialize Test Particles %d species", nstestpart);
+	  testpart = (Particles3D*) malloc(sizeof(Particles3D)*nstestpart);
+	  for (int i = 0; i < nstestpart; i++)
+	  {
+	     new(&testpart[i]) Particles3D(i+ns,col,vct,grid);//species id for test particles is increased by ns
+	     testpart[i].pitch_angle_energy(EMf);
+	   }
+  }
+
+
   if (col->getWriteMethod() == "shdf5")
   {
     #ifndef NO_HDF5
-  outputWrapperFPP = new OutputWrapperFPP;
-  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns);
+	  outputWrapperFPP = new OutputWrapperFPP;
+	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns);
     #endif
   }
 
@@ -359,10 +367,6 @@ bool c_Solver::ParticlesMover()
 
 void c_Solver::WriteRestart(int cycle)
 {
-  bool do_WriteRestart = (cycle % restart_cycle == 0 && restart_cycle!=0);
-  if(!do_WriteRestart)
-    return;
-
   #ifndef NO_HDF5
   convertParticlesToSynched(); // hack
   // write the RESTART file
@@ -539,21 +543,22 @@ void c_Solver::WriteOutput(int cycle) {
   }
   else if (col->getWriteMethod() == "shdf5")
   {
+	if(col->getRestartOutputCycle()!=0 && cycle%(col->getRestartOutputCycle())==0)
+		  WriteRestart(cycle);
+
     // write fields-related data
     if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
           WriteFields(cycle);
+
     // This should be invoked by user if desired
     // by means of a callback mechanism.
     //WriteVirtualSatelliteTraces();
 
     // write particles-related data
-    //
-    // this also writes field data...
-    
-        WriteRestart(cycle);
-    
-      if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+    if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
         WriteParticles(cycle);
+
+
   }
   else if (col->getWriteMethod() == "default")
   {

@@ -41,8 +41,6 @@ PERIODICX = 1
 PERIODICY = 0
 PERIODICZ = 1
 
-# mover
-NiterMover = 3   # number of predictor-corrector iterations for electrons
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
 #    ns = number of species

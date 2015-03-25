@@ -221,6 +221,57 @@ void Particles3D::maxwellian(Field * EMf)
   }
 }
 
+
+/** pitch_angle_energy initialization (Assume B on z only) for test particles */
+void Particles3D::pitch_angle_energy(Field * EMf) {
+    if (vct->getCartesian_rank() == 0){
+    	cout << "------------------------------------------" << endl;
+        cout << "Initialize Test Particle "<< ns << " with pitch angle "<< pitch_angle << ", energy " << energy << ", qom " << qom << ", npcel "<< npcel<< endl;
+        cout << "------------------------------------------" << endl;
+    }
+    /* initialize random generator with different seed on different processor */
+    srand(vct->getCartesian_rank()+2);
+    assert_eq(_pcls.size(),0);
+
+    double p0, pperp0, gyro_phase;
+
+    const double q_factor =  (qom / fabs(qom)) * grid->getVOL() / npcel;
+
+    long long counter=0;
+
+    for (int i=1; i< grid->getNXC()-1;i++)
+        for (int j=1; j< grid->getNYC()-1;j++)
+            for (int k=1; k< grid->getNZC()-1;k++){
+
+            	// q = charge following electron (species 0)
+            	const double q = q_factor * EMf->getRHOcs(i, j, k, 0);
+
+                for (int ii=0; ii < npcelx; ii++)
+                    for (int jj=0; jj < npcely; jj++)
+                        for (int kk=0; kk < npcelz; kk++){
+                        	const double x= (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+                        	const double y= (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+                        	const double z= (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+
+                            // velocity - assumes B is along z
+                            p0=sqrt((energy+1)*(energy+1)-1);
+                            const double w =p0*cos(pitch_angle);
+                            pperp0=p0*sin(pitch_angle);
+                            gyro_phase = 2*M_PI* rand()/(double)RAND_MAX;
+                            const double u=pperp0*cos(gyro_phase);
+                            const double v=pperp0*sin(gyro_phase);
+                            counter++ ;
+
+                            create_new_particle(u,v,w,q,x,y,z);
+                        }
+            }
+
+    dprintf("number of particles of species %d: %d", ns, getNOP());
+    const int num_ids = 1;
+    longid id_list[num_ids] = {0};
+}
+
+
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Field * EMf)
 {

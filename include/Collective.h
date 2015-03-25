@@ -84,6 +84,7 @@ class Collective
     double getSmooth()const{ return (Smooth); }
     int getNcycles()const{ return (ncycles); }
     int getNs()const{ return (ns); }
+    int getNsTestPart()const{ return (nstestpart); }
     int getNpcel(int nspecies)const{ return (npcel[nspecies]); }
     int getNpcelx(int nspecies)const{ return (npcelx[nspecies]); }
     int getNpcely(int nspecies)const{ return (npcely[nspecies]); }
@@ -100,6 +101,11 @@ class Collective
     double getU0(int nspecies)const{ return (u0[nspecies]); }
     double getV0(int nspecies)const{ return (v0[nspecies]); }
     double getW0(int nspecies)const{ return (w0[nspecies]); }
+
+    double getPitchAngle(int nspecies)const{ return (pitch_angle[nspecies]); }
+    double getEnergy(int nspecies)const{ return (energy[nspecies]); }
+
+
     int getBcPfaceXright()const{ return (bcPfaceXright); }
     int getBcPfaceXleft()const{ return (bcPfaceXleft); }
     int getBcPfaceYright()const{ return (bcPfaceYright); }
@@ -217,6 +223,8 @@ class Collective
     bool PERIODICZ;
     /*! number of species */
     int ns;
+    /*! number of test particle species */
+    int nstestpart;
     /*! number of particles per cell */
     int *npcel;
     /*! number of particles per cell - X direction */
@@ -248,6 +256,12 @@ class Collective
     double *v0;
     /*! Drift velocity - Direction Z */
     double *w0;
+
+    /*! Pitch Angle for Test Particles */
+    double *pitch_angle;
+    /*! Energy for Test Particles */
+    double *energy;
+
 
     /*! Case type */
     string Case;

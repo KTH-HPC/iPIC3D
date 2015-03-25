@@ -152,19 +152,26 @@ Particles3Dcomm::Particles3Dcomm(
   recvZrght.post_recvs();
 
   // info from collectiveIO
-  //
+  isTestParticle = (get_species_num()>=col->getNs());
   npcel = col->getNpcel(get_species_num());
   npcelx = col->getNpcelx(get_species_num());
   npcely = col->getNpcely(get_species_num());
   npcelz = col->getNpcelz(get_species_num());
-  //
   qom = col->getQOM(get_species_num());
+
+if( !isTestParticle ){
   uth = col->getUth(get_species_num());
   vth = col->getVth(get_species_num());
   wth = col->getWth(get_species_num());
   u0 = col->getU0(get_species_num());
   v0 = col->getV0(get_species_num());
   w0 = col->getW0(get_species_num());
+  TrackParticleID = col->getTrackParticleID(get_species_num());
+  Ninj = col->getRHOinject(get_species_num());
+}else{
+	pitch_angle = col->getPitchAngle(get_species_num()-col->getNs());
+	energy = col->getEnergy(get_species_num()-col->getNs());
+}
   dt = col->getDt();
   Lx = col->getLx();
   Ly = col->getLy();
@@ -173,13 +180,13 @@ Particles3Dcomm::Particles3Dcomm(
   dy = grid->getDY();
   dz = grid->getDZ();
   delta = col->getDelta();
-  TrackParticleID = col->getTrackParticleID(get_species_num());
+
   c = col->getC();
   // info for mover
   NiterMover = col->getNiterMover();
   // velocity of the injection from the wall
   Vinj = col->getVinj();
-  Ninj = col->getRHOinject(get_species_num());
+
   //
   // boundary condition for particles
   //
