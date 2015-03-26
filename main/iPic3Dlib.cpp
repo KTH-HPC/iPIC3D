@@ -639,7 +639,8 @@ void c_Solver::convertParticlesToSynched()
 
 //flush to disk if test particle buffer is full
 void c_Solver::flushFullBuffer(int cycle){
-	fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+	if(cycle >0 && cycle % (col->getTestPartFlushCycle()*col->getTestParticlesOutputCycle()) == 0)
+		fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
 }
 
 // buffering test particles
