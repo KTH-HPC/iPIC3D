@@ -153,11 +153,11 @@ Particles3Dcomm::Particles3Dcomm(
 
   // info from collectiveIO
   isTestParticle = (get_species_num()>=col->getNs());
-  npcel = col->getNpcel(get_species_num());
+  npcel  = col->getNpcel(get_species_num());
   npcelx = col->getNpcelx(get_species_num());
   npcely = col->getNpcely(get_species_num());
   npcelz = col->getNpcelz(get_species_num());
-  qom = col->getQOM(get_species_num());
+  qom    = col->getQOM(get_species_num());
 
 if( !isTestParticle ){
   uth = col->getUth(get_species_num());
@@ -251,18 +251,34 @@ if( !isTestParticle ){
   //
   // SoA particle representation
   //
-  // velocities
-  u.reserve(initial_capacity);
-  v.reserve(initial_capacity);
-  w.reserve(initial_capacity);
-  // charge
-  q.reserve(initial_capacity);
-  // positions
-  x.reserve(initial_capacity);
-  y.reserve(initial_capacity);
-  z.reserve(initial_capacity);
-  // subcycle time
-  t.reserve(initial_capacity);
+if( !isTestParticle ){
+	  // velocities
+	  u.reserve(initial_capacity);
+	  v.reserve(initial_capacity);
+	  w.reserve(initial_capacity);
+	  // charge
+	  q.reserve(initial_capacity);
+	  // positions
+	  x.reserve(initial_capacity);
+	  y.reserve(initial_capacity);
+	  z.reserve(initial_capacity);
+	  // subcycle time
+	  t.reserve(initial_capacity);
+}else if( !col->testparticle_output_is_off() ){
+	  //Test Particle Reserves 10*initial_capacity for buffering
+	  // velocities
+	  u.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  v.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  w.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  // charge
+	  //q.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  // positions
+	  x.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  y.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  z.reserve(initial_capacity*col->getTestPartFlushCycle());
+	  // subcycle time
+	  //t.reserve(initial_capacity*col->getTestPartFlushCycle());
+}
   //
   // AoS particle representation
   //
@@ -1293,8 +1309,8 @@ int Particles3Dcomm::separate_and_send_particles()
   // why does it happen that multiple particles have an ID of 0?
   const int num_ids = 1;
   longid id_list[num_ids] = {0};
-  //print_pcls(_pcls,ns,id_list, num_ids);
-  timeTasks_set_communicating(); // communicating until end of scope
+
+  //timeTasks_set_communicating();
 
   convertParticlesToAoS();
 
@@ -1387,7 +1403,7 @@ int Particles3Dcomm::separate_and_send_particles()
 //   
 void Particles3Dcomm::recommunicate_particles_until_done(int min_num_iterations)
 {
-  timeTasks_set_communicating(); // communicating until end of scope
+  //timeTasks_set_communicating(); // communicating until end of scope
   assert_gt(min_num_iterations,0);
   // most likely exactly three particle communications
   // will be needed, one for each dimension of space,
@@ -1923,6 +1939,27 @@ void Particles3Dcomm::copyParticlesToAoS()
 // synched AoS and SoA conceptually implies a write-lock
 //
 void Particles3Dcomm::convertParticlesToSynched()
+{
+  switch(particleType)
+  {
+    default:
+      unsupported_value_error(particleType);
+    case ParticleType::SoA:
+      copyParticlesToAoS();
+      break;
+    case ParticleType::AoS:
+      copyParticlesToSoA();
+      break;
+    case ParticleType::synched:
+      break;
+  }
+  // this state conceptually implies a write-lock
+  particleType = ParticleType::synched;
+}
+
+// synched AoS and SoA conceptually implies a write-lock
+//
+void Particles3Dcomm::bufferTestParticlesToSynched()
 {
   switch(particleType)
   {

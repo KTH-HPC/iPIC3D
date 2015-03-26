@@ -89,6 +89,7 @@ public:
 
  public:
   void convertParticlesToSynched();
+  void bufferTestParticlesToSynched();
   void convertParticlesToAoS();
   void convertParticlesToSoA();
   bool particlesAreSoA()const;

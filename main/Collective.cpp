@@ -157,6 +157,8 @@ void Collective::ReadInput(string inputfile) {
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle",100);
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle",0);
+    TestParticlesOutputCycle = config.read < int >("TestParticlesOutputCycle",0);
+    testPartFlushCycle = config.read < int >("TestParticlesOutputCycle",10);
     RestartOutputCycle = config.read < int >("RestartOutputCycle",5000);
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
     CallFinalize = config.read < bool >("CallFinalize", true);
@@ -383,7 +385,7 @@ void Collective::ReadInput(string inputfile) {
 
 
 
-    verbose = config.read < bool > ("verbose",false);
+    //verbose = config.read < bool > ("verbose",false);
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright",1);
@@ -467,7 +469,10 @@ bool Collective::particle_output_is_off()const
 {
   return getParticlesOutputCycle() <= 0;
 }
-
+bool Collective::testparticle_output_is_off()const
+{
+  return getTestParticlesOutputCycle() <= 0;
+}
 
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
 int Collective::ReadRestart(string inputfile) {
@@ -669,7 +674,7 @@ int Collective::ReadRestart(string inputfile) {
   for (int i = 0; i < ns; i++)
     w0[i] = 0.0;
   // verbose on
-  verbose = 1;
+  //verbose = 1;
 
 
   // if RestartDirName == SaveDirName overwrite dt,Th,Smooth (append to old hdf files)

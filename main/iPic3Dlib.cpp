@@ -73,7 +73,6 @@ int c_Solver::Init(int argc, char **argv) {
   myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
-  verbose = col->getVerbose();
   restart_cycle = col->getRestartOutputCycle();
   SaveDirName = col->getSaveDirName();
   RestartDirName = col->getRestartDirName();
@@ -172,8 +171,7 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-
-  if (col->getWriteMethod() == "shdf5")
+  if ( Parameters::get_doWriteOutput() && col->getWriteMethod() == "shdf5")
   {
     #ifndef NO_HDF5
 	  outputWrapperFPP = new OutputWrapperFPP;
@@ -256,10 +254,7 @@ void c_Solver::CalculateMoments() {
         unsupported_value_error(Parameters::get_MOMENTS_TYPE());
     }
   }
-  //for (int i = 0; i < ns; i++)
-  //{
-  //  EMf->sumMomentsOld(part[i], grid, vct);
-  //}
+
   EMf->setZeroDerivedMoments();
   // sum all over the species
   EMf->sumOverSpecies();
@@ -360,22 +355,35 @@ bool c_Solver::ParticlesMover()
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
+
+
+  /* --------------------------------------- */
+  /* Test Particles use AoS classical mover */
+  /* --------------------------------------- */
+  for (int i = 0; i < nstestpart; i++)
+  {
+	  testpart[i].mover_PC_AoS(EMf);
+	  testpart[i].separate_and_send_particles();
+	  testpart[i].recommunicate_particles_until_done(1);
+  }
+
   return (false);
 }
 
 void c_Solver::WriteRestart(int cycle)
 {
   #ifndef NO_HDF5
-  convertParticlesToSynched(); // hack
   // write the RESTART file
-  if (restart_cycle!=0)
-      writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+  if (restart_cycle>0 && cycle%restart_cycle==0){
+	  convertParticlesToSynched(); // hack
+	  writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+  }
   #endif
 }
 
 // write the conserved quantities
 void c_Solver::WriteConserved(int cycle) {
-  if(cycle % col->getDiagnosticsOutputCycle() == 0)
+  if(col->getDiagnosticsOutputCycle() > 0 && cycle % col->getDiagnosticsOutputCycle() == 0)
   {
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
@@ -447,8 +455,8 @@ void c_Solver::WriteVirtualSatelliteTraces()
 }
 
 void c_Solver::WriteFields(int cycle) {
-  if(col->field_output_is_off())
-    return;
+  if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
+
   #ifdef NO_HDF5
     eprintf("must compile with HDF5");
   #else
@@ -470,8 +478,8 @@ void c_Solver::WriteFields(int cycle) {
 
 void c_Solver::WriteParticles(int cycle)
 {
-  if(col->particle_output_is_off())
-    return;
+  if(col->particle_output_is_off() || cycle%(col->getParticlesOutputCycle())!=0) return;
+
   #ifdef NO_HDF5
     eprintf("NO_HDF5 requires OutputMethod=none")
   #else
@@ -491,6 +499,18 @@ void c_Solver::WriteParticles(int cycle)
       "position + velocity + q ", cycle, 0);
   }
   #endif // NO_HDF5
+}
+
+void c_Solver::WriteTestParticles(int cycle)
+{
+  if(col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
+
+  #ifdef NO_HDF5
+  	  eprintf("NO_HDF5 requires OutputMethod=none")
+  #else
+  	  flushFullBuffer(cycle);
+  	  bufferTestParticlesToSynched();
+  #endif
 }
 
 // This needs to be separated into methods that save particles
@@ -541,22 +561,17 @@ void c_Solver::WriteOutput(int cycle) {
   }
   else if (col->getWriteMethod() == "shdf5")
   {
-	if(col->getRestartOutputCycle()!=0 && cycle%(col->getRestartOutputCycle())==0)
-		  WriteRestart(cycle);
+	WriteRestart(cycle);
 
-    // write fields-related data
-    if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-          WriteFields(cycle);
+    WriteFields(cycle);
+
+    WriteParticles(cycle);
+
+    WriteTestParticles(cycle);
 
     // This should be invoked by user if desired
     // by means of a callback mechanism.
     //WriteVirtualSatelliteTraces();
-
-    // write particles-related data
-    if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-        WriteParticles(cycle);
-
-
   }
   else if (col->getWriteMethod() == "default")
   {
@@ -577,7 +592,7 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  if (col->getCallFinalize())
+  if (col->getCallFinalize() && Parameters::get_doWriteOutput())
   {
     #ifndef NO_HDF5
     convertParticlesToSynched();
@@ -620,6 +635,18 @@ void c_Solver::convertParticlesToSynched()
 {
   for (int i = 0; i < ns; i++)
     part[i].convertParticlesToSynched();
+}
+
+//flush to disk if test particle buffer is full
+void c_Solver::flushFullBuffer(int cycle){
+	fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+}
+
+// buffering test particles
+void c_Solver::bufferTestParticlesToSynched()
+{
+  for (int i = 0; i < nstestpart; i++)
+    testpart[i].bufferTestParticlesToSynched();
 }
 
 int c_Solver::LastCycle() {

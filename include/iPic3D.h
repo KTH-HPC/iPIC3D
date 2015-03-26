@@ -51,6 +51,7 @@ namespace iPic3D {
     void WriteVirtualSatelliteTraces();
     void WriteFields(int cycle);
     void WriteParticles(int cycle);
+    void WriteTestParticles(int cycle);
     void WriteOutput(int cycle);
     void Finalize();
 
@@ -63,6 +64,8 @@ namespace iPic3D {
     void convertParticlesToSoA();
     void convertParticlesToAoS();
     void convertParticlesToSynched();
+    void flushFullBuffer(int cycle);
+    void bufferTestParticlesToSynched();
     void sortParticles();
 
   private:
@@ -83,7 +86,7 @@ namespace iPic3D {
       return *outputWrapperFPP;}
     OutputWrapperFPP *outputWrapperFPP;
 
-    bool verbose;
+    //bool verbose;
     string SaveDirName;
     string RestartDirName;
     string cqsat;

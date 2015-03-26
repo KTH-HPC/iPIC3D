@@ -6,7 +6,7 @@ SaveDirName = data
 
 Case              = Ram8TestParticles 
 PoissonCorrection = no        	      # Poisson correction
-WriteMethod       = shdf5   	      # Output method [ default | Parallel ]
+WriteMethod       = shdf5   	      # Options: H5hut, phdf5, shdf5, pvtk
 SimulationName    = Ram8TestParticles # Simulation name for the output
 
 

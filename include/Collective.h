@@ -104,7 +104,7 @@ class Collective
 
     double getPitchAngle(int nspecies)const{ return (pitch_angle[nspecies]); }
     double getEnergy(int nspecies)const{ return (energy[nspecies]); }
-
+    int    getTestPartFlushCycle()const{ return (testPartFlushCycle); }
 
     int getBcPfaceXright()const{ return (bcPfaceXright); }
     int getBcPfaceXleft()const{ return (bcPfaceXleft); }
@@ -131,7 +131,7 @@ class Collective
     double getB1x()const{ return (B1x); }
     double getB1y()const{ return (B1y); }
     double getB1z()const{ return (B1z); }
-    bool getVerbose()const{ return (verbose); }
+    //bool getVerbose()const{ return (verbose); }
     bool getTrackParticleID(int nspecies)const
       { return (TrackParticleID[nspecies]); }
     int getRestart_status()const{ return (restart_status); }
@@ -149,10 +149,12 @@ class Collective
     int getNiterMover()const{ return (NiterMover); }
     int getFieldOutputCycle()const{ return (FieldOutputCycle); }
     int getParticlesOutputCycle()const{ return (ParticlesOutputCycle); }
+    int getTestParticlesOutputCycle()const{ return (TestParticlesOutputCycle); }
     int getRestartOutputCycle()const{ return (RestartOutputCycle); }
     int getDiagnosticsOutputCycle()const{ return (DiagnosticsOutputCycle); }
     bool getCallFinalize()const{ return (CallFinalize); }
     bool particle_output_is_off()const;
+    bool testparticle_output_is_off()const;
     bool field_output_is_off()const;
     
     /*! Boundary condition selection for BCFace for the electric field components */
@@ -339,7 +341,7 @@ class Collective
 
 
     /*! boolean value for verbose results */
-    bool verbose;
+    //bool verbose;
     /*! RESTART */
     bool RESTART1;
 
@@ -357,6 +359,10 @@ class Collective
     int FieldOutputCycle;
     /*! Output for particles */
     int ParticlesOutputCycle;
+    /*! Output for test particles */
+    int TestParticlesOutputCycle;
+    /*! test particles are flushed to disk every testPartFlushCycle  */
+    int testPartFlushCycle;
     /*! restart cycle */
     int RestartOutputCycle;
     /*! Output for diagnostics */

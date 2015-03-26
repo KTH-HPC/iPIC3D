@@ -1,12 +1,13 @@
+# RECONNECTION SIMULATION WITH PARTICLES TRACKING
 # DIRECTORIES WITHOUT  / at the end !!!!!
 SaveDirName = data
 RestartDirName = data
 
 # New flags:
-Case              = GEM       # Select the case
-PoissonCorrection = no       # Poisson correction
-WriteMethod       = shdf5     # 
-SimulationName    = testGEM  # Simulation name for the output
+Case              = GEM       		# Select the case
+PoissonCorrection = no         		# Poisson correction
+WriteMethod       = shdf5     		# Output method [ default | Parallel ]
+SimulationName    = GEMEnergPcls        # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.0195
@@ -24,12 +25,13 @@ c = 1.0
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.2      # Smoothing value (5-points stencil)
 
+# %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
 Lx = 20   # Lx = simulation box length - x direction    
-Ly = 5   # Ly = simulation box length - y direction   
-Lz = 5   # Lz = simulation box length - z direction
+Ly = 15   # Ly = simulation box length - y direction   
+Lz = 10   # Lz = simulation box length - z direction
 nxc = 128  # nxc = number of cells - x direction        
-nyc = 32  # nyc = number of cells - y direction 
-nzc = 32  # nzc = number of cells - z direction 
+nyc = 96  # nyc = number of cells - y direction 
+nzc = 64  # nzc = number of cells - z direction 
 
 # %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
 # number of MPI subdomains in each direction
@@ -40,7 +42,6 @@ ZLEN = 2
 PERIODICX = 1
 PERIODICY = 0
 PERIODICZ = 1
-
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
 #    ns = number of species
@@ -54,16 +55,15 @@ qom = -64.0 1.0 -64 1.0
 
 # Initial density (make sure that plasma is neutral)
 rhoINIT = 1.0 1.0 0.1 0.1
-rhoINJECT = 0.0 0.0 0.0 0.0
-
+rhoINJECT=0.0 0.0 0.0 0.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID= 1 1 1 1 
 # npcelx = number of particles per cell - Direction X 
-npcelx = 3 3 3 3 
+npcelx = 4 4 4 4 
 # npcely = number of particles per cell - Direction Y */
-npcely = 3 3 3 3 
+npcely = 4 4 4 4 
 # npcelz = number of particles per cell - Direction Z */
-npcelz = 3 3 3 3  
+npcelz = 4 4 4 4  
 
 
 
@@ -118,7 +118,7 @@ bcPHIfaceZleft  = 1
 
 # velocity of the injection from the wall 
     Vinj= 0.0
-    
+	
 # CG solver stopping criterium tolerance 
    CGtol = 1E-3
 # GMRES solver stopping criterium tolerance 
@@ -128,7 +128,6 @@ bcPHIfaceZleft  = 1
 # Output for field 
    FieldOutputCycle=100
 # Output for particles if 1 it doesnt save particles data
-   ParticlesOutputCycle = 10
+   ParticlesOutputCycle = 0
 # restart cycle 
    RestartOutputCycle = 200000
-
