@@ -51,6 +51,7 @@ namespace iPic3D {
     void WriteVirtualSatelliteTraces();
     void WriteFields(int cycle);
     void WriteParticles(int cycle);
+    void WriteTestParticles(int cycle);
     void WriteOutput(int cycle);
     void Finalize();
 
@@ -63,6 +64,8 @@ namespace iPic3D {
     void convertParticlesToSoA();
     void convertParticlesToAoS();
     void convertParticlesToSynched();
+    void flushFullBuffer(int cycle);
+    void bufferTestParticlesToSynched();
     void sortParticles();
 
   private:
@@ -72,6 +75,7 @@ namespace iPic3D {
     Grid3DCU      *grid;
     EMfields3D    *EMf;
     Particles3D   *part;
+    Particles3D   *testpart;
     double        *Ke;
     double        *momentum;
     double        *Qremoved;
@@ -82,7 +86,7 @@ namespace iPic3D {
       return *outputWrapperFPP;}
     OutputWrapperFPP *outputWrapperFPP;
 
-    bool verbose;
+    //bool verbose;
     string SaveDirName;
     string RestartDirName;
     string cqsat;
@@ -93,6 +97,7 @@ namespace iPic3D {
     int restart_status;
     int first_cycle;
     int ns;
+    int nstestpart;
     int nprocs;
     int myrank;
     int nsat;
