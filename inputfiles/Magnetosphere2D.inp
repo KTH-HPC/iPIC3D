@@ -45,13 +45,13 @@ z_center =   20.0            # center of the dipole - Z
 L_square =   0.5             # radius of the planet
 
 nxc =  1024                  # nxc = number of cells - x direction        
-nyc =  2                     # nyc = number of cells - y direction
+nyc =  1                     # nyc = number of cells - y direction
 nzc =  1024                  # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
 # number of MPI subdomains in each direction
-XLEN = 2
-YLEN = 2
+XLEN = 4
+YLEN = 1
 ZLEN = 2
 # topology (1=true, 0=false): USE PERIODIC IN ALL DIRECTIONS
 PERIODICX = 0

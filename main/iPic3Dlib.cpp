@@ -140,9 +140,6 @@ int c_Solver::Init(int argc, char **argv) {
     EMf->init();
   }
 
-  // OpenBC
-  EMf->updateInfoFields();
-
   // Allocation of particles
   part = (Particles3D*) malloc(sizeof(Particles3D)*ns);
   for (int i = 0; i < ns; i++)
@@ -281,7 +278,7 @@ void c_Solver::CalculateMoments() {
 //! MAXWELL SOLVER for Efield
 void c_Solver::CalculateField() {
   timeTasks_set_main_task(TimeTasks::FIELDS);
-  EMf->updateInfoFields();
+
   // calculate the E field
   EMf->calculateE();
 }
