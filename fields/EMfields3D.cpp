@@ -4188,6 +4188,105 @@ void EMfields3D::initDipole()
 
 }
 
+/*! Initialise a 2D magnetic dipoles according to paper L.K.S Two-way coupling of a global Hall ....*/
+void EMfields3D::initDipole2D()
+{
+  const Collective *col = &get_col();
+  const VirtualTopology3D *vct = &get_vct();
+  const Grid *grid = &get_grid();
+
+  // initialize
+  if (vct->getCartesian_rank() ==0){
+      cout << "------------------------------------------" << endl;
+      cout << "Initialise a 2D Magnetic Dipole on XY Plane" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "B1x   (external dipole field)    = " << B1x << endl;
+      cout << "B1y                              = " << B1y << endl;
+      cout << "B1z                              = " << B1z << endl;
+      cout << "L_square - no magnetic field inside a sphere with radius L_square  = " << L_square << endl;
+      cout << "Center dipole - X                = " << x_center << endl;
+      cout << "Center dipole - Y                = " << y_center << endl;
+      cout << "Center dipole - Z                = " << z_center << endl;
+      cout << "Solar Wind drift velocity        = " << ue0 << endl;
+  }
+
+
+  double distance;
+  double x_displ, z_displ, fac1;
+
+  double ebc[3];
+  cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
+  scale(ebc,-1.0,3);
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+        for (int is=0; is < ns; is++){
+          rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+        }
+        Ex[i][j][k] = ebc[0];
+        Ey[i][j][k] = ebc[1];
+        Ez[i][j][k] = ebc[2];
+
+        double blp[3];
+        double a=L_square;
+
+        double xc=x_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double r2 = ((x-xc)*(x-xc)) + ((z-zc)*(z-zc));
+
+        // Compute dipolar field B_ext
+
+        if (r2 > a*a) {
+            x_displ = x - xc;
+            z_displ = z - zc;
+
+            fac1 =  -B1z*a*a/(r2*r2);//fac1 = D/4?
+
+			Bx_ext[i][j][k] = 2*x_displ*z_displ*fac1;
+			By_ext[i][j][k] = 0.0;
+			Bz_ext[i][j][k] = (z_displ*z_displ - x_displ*x_displ)*fac1;
+
+        }
+        else { // no field inside the planet
+            Bx_ext[i][j][k]  = 0.0;
+            By_ext[i][j][k]  = 0.0;
+            Bz_ext[i][j][k]  = 0.0;
+        }
+
+        Bxn[i][j][k] = B0x;// + Bx_ext[i][j][k]
+        Byn[i][j][k] = B0y;// + By_ext[i][j][k]
+        Bzn[i][j][k] = B0z;// + Bz_ext[i][j][k]
+
+      }
+    }
+  }
+
+
+	grid->interpN2C(Bxc,Bxn);
+	grid->interpN2C(Byc,Byn);
+	grid->interpN2C(Bzc,Bzn);
+
+	communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct, this);
+	communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct, this);
+	communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct, this);
+
+	for (int is=0 ; is<ns; is++)
+		grid->interpN2C(rhocs,is,rhons);
+
+
+
+	if (restart1 != 0) { // EM initialization from RESTART
+		init();  // use the fields from restart file
+	}
+}
 
 /*! Calculate the susceptibility on the boundary leftX */
 void EMfields3D::sustensorLeftX(double **susxx, double **susyx, double **suszx) {
