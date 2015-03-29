@@ -4,11 +4,10 @@
 #define EMfields3D_H
 
 #include "asserts.h"
-//#include "BCStructure.h"
 #include "ipicfwd.h"
 #include "Alloc.h"
 #include "Basic.h"
-struct injInfoFields;
+
 
 /*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
 
@@ -273,9 +272,6 @@ class EMfields3D                // :public Field
 
     /*! print electromagnetic fields info */
     void print(void) const;
-
-    // OpenBC
-    void updateInfoFields();
     
     
     //get MPI Derived Datatype
@@ -524,9 +520,6 @@ class EMfields3D                // :public Field
     /*! GMRES tolerance criterium for stopping iterations */
     double GMREStol;
 
-    // OpenBC implementation
-
-    injInfoFields *injFieldsLeft, *injFieldsRight, *injFieldsTop, *injFieldsBottom, *injFieldsFront, *injFieldsRear;
 
     //MPI Derived Datatype for Center Halo Exchange
     MPI_Datatype yzFacetypeC;
@@ -552,19 +545,12 @@ class EMfields3D                // :public Field
     MPI_Datatype zEdgetypeN2;
     MPI_Datatype cornertypeN;
     
-    
-    injInfoFields* get_InfoFieldsLeft();
-    injInfoFields* get_InfoFieldsTop();
-    injInfoFields* get_InfoFieldsBottom();
-    injInfoFields* get_InfoFieldsFront();
-    injInfoFields* get_InfoFieldsRear();
-    injInfoFields* get_InfoFieldsRight();
 
-    void BoundaryConditionsB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
+    void OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz);
-    void BoundaryConditionsE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
+    void OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz);
-    void BoundaryConditionsEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+    void OpenBoundaryInflowEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
       const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
       int nx, int ny, int nz);
 };
