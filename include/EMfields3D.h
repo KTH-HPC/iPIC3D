@@ -548,23 +548,12 @@ class EMfields3D                // :public Field
     MPI_Datatype zEdgetypeN2;
     MPI_Datatype cornertypeN;
     
-<<<<<<< HEAD
     //for VTK output
     MPI_Datatype  procviewXYZ,xyzcomp,procview,ghosttype;
     bool lEndFlag;
     
-    injInfoFields* get_InfoFieldsLeft();
-    injInfoFields* get_InfoFieldsTop();
-    injInfoFields* get_InfoFieldsBottom();
-    injInfoFields* get_InfoFieldsFront();
-    injInfoFields* get_InfoFieldsRear();
-    injInfoFields* get_InfoFieldsRight();
-
-    void BoundaryConditionsB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
-=======
-
     void OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
->>>>>>> master
+
       int nx, int ny, int nz);
     void OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz);
