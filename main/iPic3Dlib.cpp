@@ -567,7 +567,7 @@ void c_Solver::WriteOutput(int cycle) {
 
 	    WriteParticles(cycle);
 
-	    WriteTestParticles(cycle);
+	    if(nstestpart > 0) WriteTestParticles(cycle);
 
 	    // This should be invoked by user if desired
 	    // by means of a callback mechanism.

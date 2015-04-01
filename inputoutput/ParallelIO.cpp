@@ -545,16 +545,20 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 
 	 if(outputTag.find("rho", 0) != string::npos) {
 
-		double**** rhoc = EMf->getRHOcs().fetch_arr4();
+		 double**** rhoc = EMf->getRHOcs().fetch_arr4();
 
 		for(int is = 0;is<nspec;is++){
+
+			grid->interpN2C(EMf->getRHOcs(), is, EMf->getRHOns());
 
 			//Convert little Endian
 			if(EMf->isLittleEndian()){
 				 for(int ix= 1;ix<nxc-1;ix++)
 					  for(int iy=1;iy<nyc-1;iy++)
-						  for(int iz=1;iz<nzc-1;iz++)
-							  ByteSwap((unsigned char*) &(rhoc[is][ix][iy][iz]),8);
+						  for(int iz=1;iz<nzc-1;iz++){
+							  //rhoc[is][ix][iy][iz]=1.23;
+							  dprintf("rhoc[is][ix][iy][iz]=%f",rhoc[is][ix][iy][iz]);
+							  ByteSwap((unsigned char*) &(rhoc[is][ix][iy][iz]),8);}
 			}
 
 			//Write VTK header
@@ -587,6 +591,20 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 
 			int err = MPI_File_set_view(fh, disp, MPI_DOUBLE, EMf->getProcview(), "native", MPI_INFO_NULL);
 			err = MPI_File_write_all(fh, rhoc[is][0][0],1,EMf->getGhostType(), &status);
+			int tcount=0;
+			MPI_Get_count(&status, MPI_DOUBLE, &tcount);
+			dprintf(" wrote %i",  tcount);
+			if(err){
+				dprintf("Error in write1\n");
+				int error_code = status.MPI_ERROR;
+				if (error_code != MPI_SUCCESS) {
+					char error_string[100];
+					int length_of_error_string, error_class;
+					MPI_Error_class(error_code, &error_class);
+					MPI_Error_string(error_class, error_string, &length_of_error_string);
+					dprintf("Error %s\n", error_string);
+				}
+			}
 			MPI_File_close(&fh);
 		}
 	 }

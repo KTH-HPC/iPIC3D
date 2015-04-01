@@ -543,9 +543,9 @@ public:
     }
 
     // rho (number density ) is written without ghost cells and defined in nodes
-    if (tag.find("rho", 0) != string::npos) {
-      this->output_adaptor.write("/moments/rho/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getRHOn());
-    }
+//    if (tag.find("rho", 0) != string::npos) {
+//      this->output_adaptor.write("/moments/rho/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getRHOn());
+//    }
     // pressure for species s is written without ghost cells and defined in nodes
     if (tag.find("pressure", 0) != string::npos) {
       for (int i = 0; i < ns; ++i) {
