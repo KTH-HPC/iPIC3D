@@ -4649,7 +4649,7 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
 		vectorZ[1][j][k] = B0z;
       }
   }
-
+  /*
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
@@ -4715,7 +4715,7 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
         vectorZ[i][j][nz-1] = B0z;
       }
   }
-
+  */
 }
 
 void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
@@ -4734,18 +4734,18 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
         vectorY[1][j][k] = injE[1];
         vectorZ[1][j][k] = injE[2];
 
-		vectorX[0][j][k] = injE[0];
-		vectorY[0][j][k] = injE[1];
-		vectorZ[0][j][k] = injE[2];
+	//vectorX[0][j][k] = injE[0];
+	//vectorY[0][j][k] = injE[1];
+	//vectorZ[0][j][k] = injE[2];
       } 
   }
 
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
-		vectorX[nx-2][j][k] = injE[0];
-		vectorY[nx-2][j][k] = injE[1];
-		vectorZ[nx-2][j][k] = injE[2];
+	//vectorX[nx-2][j][k] = injE[0];
+	//	vectorY[nx-2][j][k] = injE[1];
+	//	vectorZ[nx-2][j][k] = injE[2];
 
         vectorX[nx-1][j][k] = injE[0];
         vectorY[nx-1][j][k] = injE[1];
@@ -4756,9 +4756,9 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2) {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-		vectorX[i][1][k] = injE[0];
-		vectorY[i][1][k] = injE[1];
-		vectorZ[i][1][k] = injE[2];
+	//vectorX[i][1][k] = injE[0];
+	//ectorY[i][1][k] = injE[1];
+	//vectorZ[i][1][k] = injE[2];
 
         vectorX[i][0][k] = injE[0];
         vectorY[i][0][k] = injE[1];
@@ -4769,9 +4769,9 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2) {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-		vectorX[i][ny-2][k] = injE[0];
-		vectorY[i][ny-2][k] = injE[1];
-		vectorZ[i][ny-2][k] = injE[2];
+	//vectorX[i][ny-2][k] = injE[0];
+	//vectorY[i][ny-2][k] = injE[1];
+	//vectorZ[i][ny-2][k] = injE[2];
 
         vectorX[i][ny-1][k] = injE[0];
         vectorY[i][ny-1][k] = injE[1];
@@ -4782,9 +4782,9 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2) {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-		vectorX[i][j][1] = injE[0];
-		vectorY[i][j][1] = injE[1];
-		vectorZ[i][j][1] = injE[2];
+	//vectorX[i][j][1] = injE[0];
+	//vectorY[i][j][1] = injE[1];
+	//vectorZ[i][j][1] = injE[2];
 
         vectorX[i][j][0] = injE[0];
         vectorY[i][j][0] = injE[1];
@@ -4795,9 +4795,9 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2) {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-		vectorX[i][j][nz-2] = injE[0];
-		vectorY[i][j][nz-2] = injE[1];
-		vectorZ[i][j][nz-2] = injE[2];
+	//vectorX[i][j][nz-2] = injE[0];
+	//vectorY[i][j][nz-2] = injE[1];
+	//vectorZ[i][j][nz-2] = injE[2];
 
         vectorX[i][j][nz-1] = injE[0];
         vectorY[i][j][nz-1] = injE[1];

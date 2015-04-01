@@ -31,22 +31,22 @@ th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
-Smooth = 0.5                  # Smoothing value (5-points stencil)
+Smooth = 1.0                  # Smoothing value (5-points stencil)
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   40.0                  # Lx = simulation box length - x direction   
+Lx =   50.0                  # Lx = simulation box length - x direction   
 Ly =   1.0                   # Ly = simulation box length - y direction
-Lz =   40.0                  # Lz = simulation box length - z direction   
+Lz =   50.0                  # Lz = simulation box length - z direction   
 
-x_center =   18.0             # center of the dipole - X
+x_center =   20.0             # center of the dipole - X
 y_center =   0.5             # center of the dipole - Y
-z_center =   20.0            # center of the dipole - Z  
-L_square =   0.5             # radius of the planet
+z_center =   25.0            # center of the dipole - Z  
+L_square =   0.8             # radius of the planet
 
-nxc =  1024                  # nxc = number of cells - x direction        
+nxc =  512                  # nxc = number of cells - x direction        
 nyc =  1                     # nyc = number of cells - y direction
-nzc =  1024                  # nzc = number of cells - z direction        
+nzc =  512                  # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
 # number of MPI subdomains in each direction
@@ -71,11 +71,11 @@ rhoINJECT =  1.0   1.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID = 0	0 
 # npcelx = number of particles per cell - Direction X 
-npcelx =    3	 3
+npcelx =    4	 4
 # npcely = number of particles per cell - Direction Y 
-npcely =    3	 3	
+npcely =    4	 4	
 # npcelz = number of particles per cell - Direction Z 
-npcelz =    3 	 3
+npcelz =    4 	 4
 
 
 # qom = charge to mass ratio for different species 
