@@ -345,38 +345,37 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf, Collective *col, VCtopology3D *
 
 void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, const string & outputTag ,int cycle){
 
-	//All VTK output at cell
-	const int nxc  =grid->getNXC(),nyc=grid->getNYC(),nzc=grid->getNZC();
-	const int dimX =(nzc-2)*vct->getZLEN(), dimY = (nyc-2)*vct->getYLEN(), dimZ = (nxc-2)*vct->getXLEN();
-	const double spaceX = grid->getDZ(), spaceY = grid->getDY(), spaceZ = grid->getDX();
-	const int nPoints = dimX*dimY*dimZ;
+	//All VTK output at grid cells excluding ghost cells
+	//const int nxc  =grid->getNXC(),nyc=grid->getNYC(),nzc=grid->getNZC();
+	const int nxn  =grid->getNXN(),nyn=grid->getNYN(),nzn=grid->getNZN();
+	const int dimX =(grid->getNXC()-2)*vct->getXLEN(), dimY = (grid->getNYC()-2)*vct->getYLEN(), dimZ =(grid->getNZC()-2)*vct->getZLEN();
+	const double spaceX = grid->getDX(), spaceY = grid->getDY(), spaceZ = grid->getDZ();
+	const int   nPoints = dimX*dimY*dimZ;
 	MPI_File      fh;
 	MPI_Status    status;
 
-	arr3_double bxc(nxc, nyc, nzc);
-	arr3_double byc(nxc, nyc, nzc);
-	arr3_double bzc(nxc, nyc, nzc);
-	double writebuffer[nxc-2][nyc-2][nzc-2][3];
 
-	const string tags0[]={"B", "E"};
-	for(int tagid=0;tagid<2;tagid++){
+
+	if (outputTag.find("B", 0) != string::npos || outputTag.find("E", 0) != string::npos){
+
+		const string tags0[]={"B", "E"};
+		double writebuffer3[nzn-2][nyn-2][nxn-2][3];
+
+		for(int tagid=0;tagid<2;tagid++){
 		 if (outputTag.find(tags0[tagid], 0) == string::npos) continue;
 
 		 char   header[1024];
 		 if (tags0[tagid].compare("B") == 0){
-
-	      // interpolate N2C for external B
-	      grid->interpN2C(bxc , EMf->getBx_ext());
-	      grid->interpN2C(byc , EMf->getBy_ext());
-	      grid->interpN2C(bzc , EMf->getBz_ext());
-
-	      //Add extB to B at cell
-	      addscale(1.0,bxc,EMf->getBxc(),bxc,nxc,nyc,nzc);
-	      addscale(1.0,byc,EMf->getByc(),byc,nxc,nyc,nzc);
-	      addscale(1.0,bzc,EMf->getBzc(),bzc,nxc,nyc,nzc);
+			 for(int iz=0;iz<nzn-2;iz++)
+				  for(int iy=0;iy<nyn-2;iy++)
+					  for(int ix= 0;ix<nxn-2;ix++){
+						  writebuffer3[iz][iy][ix][0]=EMf->getBxTot(ix+1, iy+1, iz+1);
+						  writebuffer3[iz][iy][ix][1]=EMf->getByTot(ix+1, iy+1, iz+1);
+						  writebuffer3[iz][iy][ix][2]=EMf->getBzTot(ix+1, iy+1, iz+1);
+					  }
 
 	      //Write VTK header
-		   sprintf(header, "# vtk DataFile Version 2.0\n"
+		  sprintf(header, "# vtk DataFile Version 2.0\n"
 						   "Magnetic Field from iPIC3D\n"
 						   "BINARY\n"
 						   "DATASET STRUCTURED_POINTS\n"
@@ -388,42 +387,36 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 
 		 }else if (tags0[tagid].compare("E") == 0){
 
-		  // interpolate N2C for E
-		  grid->interpN2C(bxc , EMf->getEx());
-		  grid->interpN2C(byc , EMf->getEy());
-		  grid->interpN2C(bzc , EMf->getEz());
+			 for(int iz=0;iz<nzn-2;iz++)
+				  for(int iy=0;iy<nyn-2;iy++)
+					  for(int ix= 0;ix<nxn-2;ix++){
+						  writebuffer3[iz][iy][ix][0]=EMf->getEx(ix+1, iy+1, iz+1);
+						  writebuffer3[iz][iy][ix][1]=EMf->getEy(ix+1, iy+1, iz+1);
+						  writebuffer3[iz][iy][ix][2]=EMf->getEz(ix+1, iy+1, iz+1);
+					  }
 
 		  //Write VTK header
 		   sprintf(header, "# vtk DataFile Version 2.0\n"
-		   "Electric Field from iPIC3D\n"
-		   "BINARY\n"
-		   "DATASET STRUCTURED_POINTS\n"
-		   "DIMENSIONS %d %d %d\n"
-		   "ORIGIN 0 0 0\n"
-		   "SPACING %f %f %f\n"
-		   "POINT_DATA %d \n"
-		   "VECTORS E double\n", dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints);
-
+						   "Electric Field from iPIC3D\n"
+						   "BINARY\n"
+						   "DATASET STRUCTURED_POINTS\n"
+						   "DIMENSIONS %d %d %d\n"
+						   "ORIGIN 0 0 0\n"
+						   "SPACING %f %f %f\n"
+						   "POINT_DATA %d \n"
+						   "VECTORS E double\n", dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints);
 		 }
 
-		 //Merge x y z components for VTK
-		 for(int ix= 0;ix<nxc-2;ix++)
-			  for(int iy=0;iy<nyc-2;iy++)
-				  for(int iz=0;iz<nzc-2;iz++){
-					  writebuffer[ix][iy][iz][0]=bxc[ix+1][iy+1][iz+1];
-					  writebuffer[ix][iy][iz][1]=byc[ix+1][iy+1][iz+1];
-					  writebuffer[ix][iy][iz][2]=bzc[ix+1][iy+1][iz+1];
-				  }
 
 		 if(EMf->isLittleEndian()){
-			  for(int ix= 0;ix<nxc-2;ix++)
-				  for(int iy=0;iy<nyc-2;iy++)
-					  for(int iz=0;iz<nzc-2;iz++){
-						  ByteSwap((unsigned char*) &writebuffer[ix][iy][iz][0],8);
-						  ByteSwap((unsigned char*) &writebuffer[ix][iy][iz][1],8);
-						  ByteSwap((unsigned char*) &writebuffer[ix][iy][iz][2],8);
-					  }
 
+			 for(int iz=0;iz<nzn-2;iz++)
+				  for(int iy=0;iy<nyn-2;iy++)
+					  for(int ix= 0;ix<nxn-2;ix++){
+						  ByteSwap((unsigned char*) &writebuffer3[iz][iy][ix][0],8);
+						  ByteSwap((unsigned char*) &writebuffer3[iz][iy][ix][1],8);
+						  ByteSwap((unsigned char*) &writebuffer3[iz][iy][ix][2],8);
+					  }
 		 }
 
 		  int nelem = strlen(header);
@@ -438,8 +431,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 		  if (vct->getCartesian_rank()==0){
 			  MPI_File_write(fh, header, nelem, MPI_BYTE, &status);
 		  }
-		  former_MPI_Barrier(MPI_COMM_WORLD);
-
+		  //former_MPI_Barrier(MPI_COMM_WORLD);
 
 	      int err = MPI_File_set_view(fh, disp, MPI_DOUBLE, EMf->getProcviewXYZ(), "native", MPI_INFO_NULL);
 	      if(err){
@@ -456,7 +448,8 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 	          }
 	      }
 
-	      err = MPI_File_write_all(fh, writebuffer[0][0][0],3*(nxc-2)*(nyc-2)*(nzc-2),MPI_DOUBLE, &status);
+	      //err = MPI_File_write_all(fh, writebuffer2,3*(nxc-2)*(nyc-2)*(nzc-2),MPI_DOUBLE, &status);
+	      err = MPI_File_write_all(fh, writebuffer3[0][0][0],3*(nxn-2)*(nyn-2)*(nzn-2),MPI_DOUBLE, &status);
 	      if(err){
 		      int tcount=0;
 		      MPI_Get_count(&status, MPI_DOUBLE, &tcount);
@@ -473,8 +466,9 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 	          }
 	      }
 	      MPI_File_close(&fh);
-	 }
-
+		}
+	}
+/*
 	if (outputTag.find("J", 0) != string::npos){
 
 		 arr4_double Jxbuffer(nspec,nxc,nyc,nzc);
@@ -491,7 +485,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 			 grid->interpN2C(Jybuffer ,is, EMf->getJys());
 			 grid->interpN2C(Jzbuffer ,is, EMf->getJzs());
 
-			 //Merge x y z components for VTK
+			 /*Merge x y z components for VTK
 			 for(int ix= 0;ix<nxc-2;ix++)
 				  for(int iy=0;iy<nyc-2;iy++)
 					  for(int iz=0;iz<nzc-2;iz++){
@@ -537,7 +531,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 			  former_MPI_Barrier(MPI_COMM_WORLD);
 
 		      MPI_File_set_view(fh, disp, MPI_DOUBLE, EMf->getProcviewXYZ(), "native", MPI_INFO_NULL);
-		      MPI_File_write_all(fh, writebuffer[0][0][0],3*(nxc-2)*(nyc-2)*(nzc-2),MPI_DOUBLE, &status);
+		      MPI_File_write_all(fh, writebuffer3[0][0][0],3*(nxc-2)*(nyc-2)*(nzc-2),MPI_DOUBLE, &status);
 
 		 }
 
@@ -557,7 +551,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 					  for(int iy=1;iy<nyc-1;iy++)
 						  for(int iz=1;iz<nzc-1;iz++){
 							  //rhoc[is][ix][iy][iz]=1.23;
-							  dprintf("rhoc[is][ix][iy][iz]=%f",rhoc[is][ix][iy][iz]);
+							  //dprintf("rhoc[is][ix][iy][iz]=%f",rhoc[is][ix][iy][iz]);
 							  ByteSwap((unsigned char*) &(rhoc[is][ix][iy][iz]),8);}
 			}
 
@@ -607,7 +601,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 			}
 			MPI_File_close(&fh);
 		}
-	 }
+	 }*/
 }
 
 void ByteSwap(unsigned char * b, int n)

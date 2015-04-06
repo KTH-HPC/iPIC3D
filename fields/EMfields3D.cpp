@@ -317,12 +317,20 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     	 //create process file view
 		  int  size[3], subsize[3], start[3];
 
-//		  3D subarray
+/*		  3D subarray
 		  subsize[0] = nxc-2; subsize[1] = nyc-2; subsize[2]=(nzc-2);
 		  size[0] = (nxc-2)*vct->getXLEN();size[1] = (nyc-2)*vct->getYLEN();size[2] = (nzc-2)*vct->getZLEN();
 		  start[0]= vct->getCoordinates(0)*subsize[0];
 		  start[1]= vct->getCoordinates(1)*subsize[1];
 		  start[2]= vct->getCoordinates(2)*subsize[2];
+*/
+
+		  //3D subarray - reverse X, Z
+		  subsize[0] = nzc-2; subsize[1] = nyc-2; subsize[2] = nxc-2;
+		  size[0] = (nzc-2)*vct->getZLEN();size[1] = (nyc-2)*vct->getYLEN();size[2] = (nxc-2)*vct->getXLEN();
+		  start[0]= vct->getCoordinates(2)*subsize[0];
+		  start[1]= vct->getCoordinates(1)*subsize[1];
+		  start[2]= vct->getCoordinates(0)*subsize[2];
 
 		  MPI_Type_contiguous(3,MPI_DOUBLE, &xyzcomp);
 		  MPI_Type_commit(&xyzcomp);
@@ -4120,7 +4128,7 @@ void EMfields3D::initDipole()
 
 	communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct, this);
 	communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct, this);
-	communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct, this);dprintf("2 Bzc[1][15][0]=%f",Bzc[1][15][0]);
+	communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct, this);
 
 	for (int is=0 ; is<ns; is++)
 		grid->interpN2C(rhocs,is,rhons);

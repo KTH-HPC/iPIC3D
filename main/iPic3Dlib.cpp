@@ -171,7 +171,7 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() && col->getWriteMethod() == "shdf5")
+  if ( Parameters::get_doWriteOutput() && col->getWriteMethod() == "pvtk")//col->getWriteMethod() == "shdf5"
   {
     #ifndef NO_HDF5
 	  outputWrapperFPP = new OutputWrapperFPP;
@@ -372,7 +372,10 @@ bool c_Solver::ParticlesMover()
 
 void c_Solver::WriteRestart(int cycle)
 {
-  #ifndef NO_HDF5
+
+  #ifdef NO_HDF5
+	eprintf("must compile with HDF5");
+  #else
   // write the RESTART file
   if (restart_cycle>0 && cycle%restart_cycle==0){
 	  convertParticlesToSynched(); // hack
@@ -470,7 +473,7 @@ void c_Solver::WriteFields(int cycle) {
     {
         // Pressure tensor is available
         fetch_outputWrapperFPP().append_output(
-          "Eall + Ball + rhos + Jsall + pressure", cycle);
+          "Ball", cycle);//Eall + Ball + rhos + Jsall + pressure
     }
   }
   #endif
@@ -517,7 +520,8 @@ void c_Solver::WriteTestParticles(int cycle)
 // and methods that save field data
 //
 void c_Solver::WriteOutput(int cycle) {
-
+	  if (vct->getCartesian_rank() == 0)
+	      cout << "*** Start WriteOutput  ***" << endl;
   // The quickest things should be written first.
 
   WriteConserved(cycle);
@@ -579,8 +583,10 @@ void c_Solver::WriteOutput(int cycle) {
       //restart file still required
 	  WriteRestart(cycle);
 
+	  WriteFields(cycle);
+
 	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-		  WriteFieldsVTK(ns, grid, EMf, col, vct, "E + B + J + rho",cycle);//Jsall
+		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B",cycle);//E + B + J + rho
 
 	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
 		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
