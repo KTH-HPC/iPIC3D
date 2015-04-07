@@ -171,7 +171,7 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() && col->getWriteMethod() == "pvtk")//col->getWriteMethod() == "shdf5"
+  if ( Parameters::get_doWriteOutput() &&col->getWriteMethod() == "shdf5")
   {
     #ifndef NO_HDF5
 	  outputWrapperFPP = new OutputWrapperFPP;
@@ -473,7 +473,7 @@ void c_Solver::WriteFields(int cycle) {
     {
         // Pressure tensor is available
         fetch_outputWrapperFPP().append_output(
-          "Ball", cycle);//Eall + Ball + rhos + Jsall + pressure
+          "Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
     }
   }
   #endif
@@ -583,10 +583,8 @@ void c_Solver::WriteOutput(int cycle) {
       //restart file still required
 	  WriteRestart(cycle);
 
-	  WriteFields(cycle);
-
 	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B",cycle);//E + B + J + rho
+		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
 
 	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
 		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
@@ -623,11 +621,6 @@ void c_Solver::Finalize() {
   my_clock->stopTiming();
 }
 
-//void c_Solver::copyParticlesToSoA()
-//{
-//  for (int i = 0; i < ns; i++)
-//    part[i].copyParticlesToSoA();
-//}
 
 void c_Solver::pad_particle_capacities()
 {

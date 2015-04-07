@@ -246,14 +246,6 @@ class EMfields3D                // :public Field
     double getJys(int X,int Y,int Z,int is)const{return Jys.get(is,X,Y,Z);}
     double getJzs(int X,int Y,int Z,int is)const{return Jzs.get(is,X,Y,Z);}
 
-    /*** accessor that require computing ***/
-
-    // get current for species in all cells except ghost
-    //
-//    arr3_double getJxsc(int is);
-//    arr3_double getJysc(int is);
-//    arr3_double getJzsc(int is);
-
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
