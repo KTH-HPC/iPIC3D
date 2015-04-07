@@ -390,6 +390,7 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 
 		assert_eq(recvcnt,sendcnt-recvcnt);
 
+
 		//Delay local data copy
 		if (left_neighborX== myrank && right_neighborX == myrank){
 			if( (left_neighborY != MPI_PROC_NULL) && (left_neighborZ != MPI_PROC_NULL)){
