@@ -89,6 +89,7 @@ public:
 
  public:
   void convertParticlesToSynched();
+  void bufferTestParticlesToSynched();
   void convertParticlesToAoS();
   void convertParticlesToSoA();
   bool particlesAreSoA()const;
@@ -298,6 +299,9 @@ protected:
   vector_double t;
   // indicates whether this class is for tracking particles
   bool TrackParticleID;
+  bool isTestParticle;
+  double pitch_angle;
+  double energy;
 
   // structures for sorting particles
   //

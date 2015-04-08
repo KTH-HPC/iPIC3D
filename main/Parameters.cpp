@@ -15,7 +15,7 @@ int Parameters::get_multiple_of_vector_width_in_doubles(){ return 8; }
 // parameters relevant to particle communication
 //
 // int Parameters::get_blockSize() { return 64; }
-int Parameters::get_blockSize() { return 2048; }
+int Parameters::get_blockSize() { return 8192; }
 int Parameters::get_numBlocks() { return 4; }
 //
 // parameters relevant to parallelization
@@ -24,7 +24,7 @@ bool Parameters::get_VECTORIZE_MOMENTS() { return false; }
 // supported options: SoA AoS
 Parameters::Enum Parameters::get_MOMENTS_TYPE() { return AoS; }
 // supported options: SoA AoS AoSvec AoSintr AoS_vec_onesort SoA_vec_resort
-Parameters::Enum Parameters::get_MOVER_TYPE() { return AoS_Relativistic; }
+Parameters::Enum Parameters::get_MOVER_TYPE() { return AoS; } // AoS_Relativistic
 //********** derived parameters *********
 
 static bool SORTING_PARTICLES;

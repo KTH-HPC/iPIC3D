@@ -1,8 +1,6 @@
 
 #include <mpi.h>
 #include <math.h>
-//#include <iostream>
-//#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include "input_array.h"
@@ -11,7 +9,7 @@
 #include "ConfigFile.h"
 #include "limits.h" // for INT_MAX
 #include "MPIdata.h"
-#include "errors.h"
+#include "debug.h"
 #include "asserts.h" // for assert_ge
 #include "string.h"
 
@@ -82,6 +80,7 @@ void Collective::ReadInput(string inputfile) {
     SaveDirName = config.read < string > ("SaveDirName","data");
     RestartDirName = config.read < string > ("RestartDirName","data");
     ns = config.read < int >("ns");
+    nstestpart = config.read < int >("nsTestPart", 0);
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio",1.5);
     assert_ge(NpMaxNpRatio, 1.);
     // mode parameters for second order in time
@@ -158,6 +157,8 @@ void Collective::ReadInput(string inputfile) {
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle",100);
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle",0);
+    TestParticlesOutputCycle = config.read < int >("TestParticlesOutputCycle",0);
+    testPartFlushCycle = config.read < int >("TestParticlesOutputCycle",10);
     RestartOutputCycle = config.read < int >("RestartOutputCycle",5000);
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
     CallFinalize = config.read < bool >("CallFinalize", true);
@@ -200,10 +201,7 @@ void Collective::ReadInput(string inputfile) {
     z_center = config.read < double >("z_center",5.0);
     L_square = config.read < double >("L_square",5.0);
 
-    npcelx = new int[ns];
-    npcely = new int[ns];
-    npcelz = new int[ns];
-    qom = new double[ns];
+
     uth = new double[ns];
     vth = new double[ns];
     wth = new double[ns];
@@ -211,12 +209,6 @@ void Collective::ReadInput(string inputfile) {
     v0 = new double[ns];
     w0 = new double[ns];
 
-    //nop_rs = new int[ns];
-
-    array_int npcelx0 = config.read < array_int > ("npcelx");
-    array_int npcely0 = config.read < array_int > ("npcely");
-    array_int npcelz0 = config.read < array_int > ("npcelz");
-    array_double qom0 = config.read < array_double > ("qom");
     array_double uth0 = config.read < array_double > ("uth");
     array_double vth0 = config.read < array_double > ("vth");
     array_double wth0 = config.read < array_double > ("wth");
@@ -224,22 +216,13 @@ void Collective::ReadInput(string inputfile) {
     array_double v00 = config.read < array_double > ("v0");
     array_double w00 = config.read < array_double > ("w0");
 
-    npcelx[0] = npcelx0.a;
-    npcely[0] = npcely0.a;
-    npcelz[0] = npcelz0.a;
-    qom[0] = qom0.a;
     uth[0] = uth0.a;
     vth[0] = vth0.a;
     wth[0] = wth0.a;
     u0[0] = u00.a;
     v0[0] = v00.a;
     w0[0] = w00.a;
-
     if (ns > 1) {
-      npcelx[1] = npcelx0.b;
-      npcely[1] = npcely0.b;
-      npcelz[1] = npcelz0.b;
-      qom[1] = qom0.b;
       uth[1] = uth0.b;
       vth[1] = vth0.b;
       wth[1] = wth0.b;
@@ -248,10 +231,6 @@ void Collective::ReadInput(string inputfile) {
       w0[1] = w00.b;
     }
     if (ns > 2) {
-      npcelx[2] = npcelx0.c;
-      npcely[2] = npcely0.c;
-      npcelz[2] = npcelz0.c;
-      qom[2] = qom0.c;
       uth[2] = uth0.c;
       vth[2] = vth0.c;
       wth[2] = wth0.c;
@@ -260,10 +239,6 @@ void Collective::ReadInput(string inputfile) {
       w0[2] = w00.c;
     }
     if (ns > 3) {
-      npcelx[3] = npcelx0.d;
-      npcely[3] = npcely0.d;
-      npcelz[3] = npcelz0.d;
-      qom[3] = qom0.d;
       uth[3] = uth0.d;
       vth[3] = vth0.d;
       wth[3] = wth0.d;
@@ -272,10 +247,6 @@ void Collective::ReadInput(string inputfile) {
       w0[3] = w00.d;
     }
     if (ns > 4) {
-      npcelx[4] = npcelx0.e;
-      npcely[4] = npcely0.e;
-      npcelz[4] = npcelz0.e;
-      qom[4] = qom0.e;
       uth[4] = uth0.e;
       vth[4] = vth0.e;
       wth[4] = wth0.e;
@@ -284,10 +255,6 @@ void Collective::ReadInput(string inputfile) {
       w0[4] = w00.e;
     }
     if (ns > 5) {
-      npcelx[5] = npcelx0.f;
-      npcely[5] = npcely0.f;
-      npcelz[5] = npcelz0.f;
-      qom[5] = qom0.f;
       uth[5] = uth0.f;
       vth[5] = vth0.f;
       wth[5] = wth0.f;
@@ -296,8 +263,129 @@ void Collective::ReadInput(string inputfile) {
       w0[1] = w00.f;
     }
 
+    if (nstestpart > 0) {
+		array_double pitch_angle0 = config.read < array_double > ("pitch_angle");
+		array_double energy0 	  = config.read < array_double > ("energy");
+		pitch_angle = new double[nstestpart];
+		energy      = new double[nstestpart];
+		if (nstestpart > 0) {
+			pitch_angle[0] = pitch_angle0.a;
+			energy[0] 	   = energy0.a;
+		}
+		if (nstestpart > 1) {
+			pitch_angle[1] = pitch_angle0.b;
+			energy[1] 	   = energy0.b;
+		}
+		if (nstestpart > 2) {
+			pitch_angle[2] = pitch_angle0.c;
+			energy[2] 	   = energy0.c;
+		}
+		if (nstestpart > 3) {
+			pitch_angle[3] = pitch_angle0.d;
+			energy[3] 	   = energy0.d;
+		}
+		if (nstestpart > 4) {
+			pitch_angle[4] = pitch_angle0.e;
+			energy[4] 	   = energy0.e;
+		}
+		if (nstestpart > 5) {
+			pitch_angle[5] = pitch_angle0.f;
+			energy[5] 	   = energy0.f;
+		}
+		if (nstestpart > 6) {
+			pitch_angle[6] = pitch_angle0.g;
+			energy[6] 	   = energy0.g;
+		}
+		if (nstestpart > 7) {
+			pitch_angle[7] = pitch_angle0.h;
+			energy[7] 	   = energy0.h;
+		}
+    }
 
-    verbose = config.read < bool > ("verbose",false);
+
+    npcelx = new int[ns+nstestpart];
+    npcely = new int[ns+nstestpart];
+    npcelz = new int[ns+nstestpart];
+    qom = new double[ns+nstestpart];
+    array_int npcelx0 = config.read < array_int > ("npcelx");
+    array_int npcely0 = config.read < array_int > ("npcely");
+    array_int npcelz0 = config.read < array_int > ("npcelz");
+    array_double qom0 = config.read < array_double > ("qom");
+    npcelx[0] = npcelx0.a;
+    npcely[0] = npcely0.a;
+    npcelz[0] = npcelz0.a;
+    qom[0]	  = qom0.a;
+    int ns_tot =ns+nstestpart;
+    if (ns_tot > 1) {
+      npcelx[1] = npcelx0.b;
+      npcely[1] = npcely0.b;
+      npcelz[1] = npcelz0.b;
+      qom[1]	= qom0.b;
+    }
+    if (ns_tot > 2) {
+      npcelx[2] = npcelx0.c;
+      npcely[2] = npcely0.c;
+      npcelz[2] = npcelz0.c;
+      qom[2] 	= qom0.c;
+    }
+    if (ns_tot > 3) {
+      npcelx[3] = npcelx0.d;
+      npcely[3] = npcely0.d;
+      npcelz[3] = npcelz0.d;
+      qom[3] 	= qom0.d;
+    }
+    if (ns_tot > 4) {
+      npcelx[4] = npcelx0.e;
+      npcely[4] = npcely0.e;
+      npcelz[4] = npcelz0.e;
+      qom[4] 	= qom0.e;
+    }
+    if (ns_tot > 5) {
+      npcelx[5] = npcelx0.f;
+      npcely[5] = npcely0.f;
+      npcelz[5] = npcelz0.f;
+      qom[5] 	= qom0.f;
+    }
+    if (ns_tot > 6) {
+      npcelx[6] = npcelx0.g;
+      npcely[6] = npcely0.g;
+      npcelz[6] = npcelz0.g;
+      qom[6] 	= qom0.g;
+    }
+    if (ns_tot > 7) {
+      npcelx[7] = npcelx0.h;
+      npcely[7] = npcely0.h;
+      npcelz[7] = npcelz0.h;
+      qom[7] 	= qom0.h;
+    }
+    if (ns_tot > 8) {
+      npcelx[8] = npcelx0.i;
+      npcely[8] = npcely0.i;
+      npcelz[8] = npcelz0.i;
+      qom[8] 	= qom0.i;
+    }
+    if (ns_tot > 9) {
+      npcelx[9] = npcelx0.j;
+      npcely[9] = npcely0.j;
+      npcelz[9] = npcelz0.j;
+      qom[9] 	= qom0.j;
+    }
+    if (ns_tot > 10) {
+      npcelx[10] = npcelx0.k;
+      npcely[10] = npcely0.k;
+      npcelz[10] = npcelz0.k;
+      qom[10] 	 = qom0.k;
+    }
+    if (ns_tot > 11) {
+      npcelx[11] = npcelx0.l;
+      npcely[11] = npcely0.l;
+      npcelz[11] = npcelz0.l;
+      qom[11] 	 = qom0.l;
+    }
+
+
+
+    //verbose = config.read < bool > ("verbose",false);
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright",1);
@@ -381,7 +469,10 @@ bool Collective::particle_output_is_off()const
 {
   return getParticlesOutputCycle() <= 0;
 }
-
+bool Collective::testparticle_output_is_off()const
+{
+  return getTestParticlesOutputCycle() <= 0;
+}
 
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
 int Collective::ReadRestart(string inputfile) {
@@ -583,7 +674,7 @@ int Collective::ReadRestart(string inputfile) {
   for (int i = 0; i < ns; i++)
     w0[i] = 0.0;
   // verbose on
-  verbose = 1;
+  //verbose = 1;
 
 
   // if RestartDirName == SaveDirName overwrite dt,Th,Smooth (append to old hdf files)
@@ -664,7 +755,7 @@ void Collective::init_derived_parameters()
   /*! dz = space step - Z direction */
   dz = Lz / (double) nzc;
   /*! npcel = number of particles per cell */
-  npcel = new int[ns];
+  npcel = new int[ns+nstestpart];
   /*! np = number of particles of different species */
   //np = new int[ns];
   /*! npMax = maximum number of particles of different species */
@@ -704,7 +795,7 @@ void Collective::init_derived_parameters()
   //num_procs = XLEN*YLEN*ZLEN;
   //ncells_rs = nxc_rs*nyc_rs*nzc_rs;
 
-  for (int i = 0; i < ns; i++)
+  for (int i = 0; i < (ns+nstestpart); i++)
   {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
     //np[i] = npcel[i] * num_cells;
@@ -741,6 +832,8 @@ Collective::~Collective() {
   delete[]rhoINIT;
   delete[]rhoINJECT;
 
+  delete[]pitch_angle;
+  delete[]energy;
 }
 /*! Print Simulation Parameters */
 void Collective::Print() {

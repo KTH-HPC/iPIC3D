@@ -316,6 +316,7 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
                 }
 		  }
 		}
+
 		if(right_neighborZ == myrank &&  left_neighborZ == myrank){
             if(right_neighborY != MPI_PROC_NULL ){
                 for (int ix = 1; ix < nx-1; ix++){
@@ -342,8 +343,6 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
                 }
             }
         }
-
-
 		//Need to finish receiving edges for corner exchange
 		if(sendcnt>0){
 			MPI_Waitall(sendcnt,&reqList[0],&stat[0]);
@@ -370,7 +369,6 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 		//Define corner types for X communication
 		recvcnt = 0,sendcnt = 0;
 		if((communicationCnt[2] == 1 || communicationCnt[3] == 1) && (communicationCnt[4] == 1 || communicationCnt[5] == 1)){
-
 			//if XLeft exists, send 4 corners to XLeft
 			if(communicationCnt[0] == 1){
 				MPI_Irecv(&vector[0][0][0],1,   cornertype, left_neighborX, tag_XR,MPI_COMM_WORLD, &reqList[recvcnt++]);

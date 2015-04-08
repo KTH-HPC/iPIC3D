@@ -188,28 +188,25 @@ class EMfields3D                // :public Field
     arr3_double getBy() { return Byn; }
     arr3_double getBz() { return Bzn; }
 
-    // field components without ghost cells
-    //
-    arr3_double getExc();
-    arr3_double getEyc();
-    arr3_double getEzc();
-    arr3_double getBxc();
-    arr3_double getByc();
-    arr3_double getBzc();
+    
+    //for parallel vtk
+    arr3_double getBxc(){return Bxc;};
+    arr3_double getByc(){return Byc;};
+    arr3_double getBzc(){return Bzc;};
 
-    arr3_double getRHOc() { return rhoc; }
-    arr3_double getRHOn() { return rhon; }
-    double getRHOc(int X, int Y, int Z) const { return rhoc.get(X,Y,Z);}
-    double getRHOn(int X, int Y, int Z) const { return rhon.get(X,Y,Z);}
+
+    //arr3_double getRHOc() { return rhoc; }
+    //arr3_double getRHOn() { return rhon; }
+    //double getRHOc(int X, int Y, int Z) const { return rhoc.get(X,Y,Z);}
+    //double getRHOn(int X, int Y, int Z) const { return rhon.get(X,Y,Z);}
 
     // densities per species:
     //
     double getRHOcs(int X,int Y,int Z,int is)const{return rhocs.get(is,X,Y,Z);}
     double getRHOns(int X,int Y,int Z,int is)const{return rhons.get(is,X,Y,Z);}
-    double*** getRHOns(int is){return &rhons[is][0];}
     arr4_double getRHOns(){return rhons;}
-    /* density on cells without ghost cells */
-    arr3_double getRHOcs(int is);
+    arr4_double getRHOcs(){return rhocs;}
+
 
     double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
     double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
@@ -249,14 +246,6 @@ class EMfields3D                // :public Field
     double getJys(int X,int Y,int Z,int is)const{return Jys.get(is,X,Y,Z);}
     double getJzs(int X,int Y,int Z,int is)const{return Jzs.get(is,X,Y,Z);}
 
-    /*** accessor that require computing ***/
-
-    // get current for species in all cells except ghost
-    //
-    arr3_double getJxsc(int is);
-    arr3_double getJysc(int is);
-    arr3_double getJzsc(int is);
-
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
@@ -286,7 +275,13 @@ class EMfields3D                // :public Field
     MPI_Datatype getZEdgetype2(bool isCenterFlag){return  isCenterFlag ?zEdgetypeC2 : zEdgetypeN2;}
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
+
+    MPI_Datatype getProcview(){return  procview;}
+    MPI_Datatype getProcviewXYZ(){return  procviewXYZ;}
+    MPI_Datatype getGhostType(){return  ghosttype;}
+
     void freeDataType();
+    bool isLittleEndian(){return lEndFlag;};
 
   public: // accessors
     const Collective& get_col()const{return _col;}
@@ -416,7 +411,7 @@ class EMfields3D                // :public Field
     array3_double vectY;
     array3_double vectZ;
     array3_double divC;
-    array3_double arr;
+    //array3_double arr;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments10 **moments10Array;
@@ -545,8 +540,12 @@ class EMfields3D                // :public Field
     MPI_Datatype zEdgetypeN2;
     MPI_Datatype cornertypeN;
     
-
+    //for VTK output
+    MPI_Datatype  procviewXYZ,xyzcomp,procview,ghosttype;
+    bool lEndFlag;
+    
     void OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
+
       int nx, int ny, int nz);
     void OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz);
