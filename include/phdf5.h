@@ -2,14 +2,17 @@
 #ifndef __PHDF5_H__
 #define __PHDF5_H__
 
-#include "mpi.h"
+#ifndef NO_HDF5
 #include "ipichdf5.h"
+#endif
+
+#include "mpi.h"
 #include "arraysfwd.h"
 #include <string>
 using namespace std;
 
 class PHDF5fileClass{
-
+#ifndef NO_HDF5
   public:
 
     PHDF5fileClass(string filestr, int nd, const int *coord, MPI_Comm mpicomm);
@@ -46,7 +49,7 @@ class PHDF5fileClass{
 
     string   filename;
     bool     bparticles;
-
+#endif
 };
 
 #endif
