@@ -11,6 +11,9 @@
 #endif
 
 #include "ipicfwd.h"
+#include "arraysfwd.h"
+#include <string>
+using std::string;
 
 void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, int cycle);
 void WritePartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, CollectiveIO *col, VCtopology3D *vct, int cycle);
@@ -20,4 +23,8 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf,       Collective *col, VCtopolo
 
 void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, Particles3Dcomm *part, CollectiveIO *col, VCtopology3D *vct, int cycle);
 
+
+void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle);
+void WritePclsVTK(int nspec, Grid3DCU *grid, Particles3D *part, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle);
+void ByteSwap(unsigned char * b, int n);
 #endif

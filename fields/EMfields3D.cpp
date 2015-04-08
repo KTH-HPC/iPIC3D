@@ -144,8 +144,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
   vectY (nxn, nyn, nzn),
   vectZ (nxn, nyn, nzn),
   divC  (nxc, nyc, nzc),
-  //arr (nxc,nyc,nzc),
-  arr (nxc-2,nyc-2,nzc-2),
+  //arr (nxc-2,nyc-2,nzc-2),
   // B_ext and J_ext should not be allocated unless used.
   Bx_ext(nxn,nyn,nzn),
   By_ext(nxn,nyn,nzn),
@@ -310,6 +309,38 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     MPI_Type_indexed(4, blocklengthN, displacementsN, MPI_DOUBLE, &cornertypeN);
     MPI_Type_commit(&cornertypeN);
 
+    if (col->getWriteMethod() == "pvtk"){
+    	//test Endian
+    	int TestEndian = 1;
+    	lEndFlag =*(char*)&TestEndian;
+
+    	 //create process file view
+		  int  size[3], subsize[3], start[3];
+
+		  //3D subarray - reverse X, Z
+		  subsize[0] = nzc-2; subsize[1] = nyc-2; subsize[2] = nxc-2;
+		  size[0] = (nzc-2)*vct->getZLEN();size[1] = (nyc-2)*vct->getYLEN();size[2] = (nxc-2)*vct->getXLEN();
+		  start[0]= vct->getCoordinates(2)*subsize[0];
+		  start[1]= vct->getCoordinates(1)*subsize[1];
+		  start[2]= vct->getCoordinates(0)*subsize[2];
+
+		  MPI_Type_contiguous(3,MPI_FLOAT, &xyzcomp);
+		  MPI_Type_commit(&xyzcomp);
+
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, xyzcomp, &procviewXYZ);
+		  MPI_Type_commit(&procviewXYZ);
+
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, MPI_FLOAT, &procview);
+		  MPI_Type_commit(&procview);
+
+		  subsize[0] = nxc-2; subsize[1] =nyc-2; subsize[2] = nzc-2;
+		  size[0]    = nxc;	  size[1] 	 =nyc;	 size[2] 	= nzc;
+		  start[0]	 = 1;	  start[1]	 =1;	 start[2]	= 1;
+		  MPI_Type_create_subarray(3, size, subsize, start,MPI_ORDER_C, MPI_FLOAT, &ghosttype);
+		  MPI_Type_commit(&ghosttype);
+
+    }
+
 }
 void EMfields3D::freeDataType(){
 	MPI_Type_free(&yzFacetypeC);
@@ -333,6 +364,9 @@ void EMfields3D::freeDataType(){
     MPI_Type_free(&yEdgetypeN2);
     MPI_Type_free(&zEdgetypeN2);
     MPI_Type_free(&cornertypeN);
+
+    MPI_Type_free(&procview);
+    MPI_Type_free(&xyzcomp);
 }
 
 // This was Particles3Dcomm::interpP2G()
@@ -4082,7 +4116,7 @@ void EMfields3D::initDipole()
 
 	grid->interpN2C(Bxc,Bxn);
 	grid->interpN2C(Byc,Byn);
-	grid->interpN2C(Bzc,Bzn);
+	grid->interpN2C(Bzc,Bzn);dprintf("1 Bzc[1][15][0]=%f",Bzc[1][15][0]);
 
 	communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct, this);
 	communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct, this);
@@ -4807,115 +4841,115 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
 }
 
 /*! get Electric Field component X array cell without the ghost cells */
-arr3_double EMfields3D::getExc()
-{
-  array3_double tmp(nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, Ex);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getExc()
+//{
+//  array3_double tmp(nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, Ex);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[i][j][k];
+//  return arr;
+//}
 /*! get Electric Field component Y array cell without the ghost cells */
-arr3_double EMfields3D::getEyc()
-{
-  array3_double tmp(nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, Ey);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getEyc()
+//{
+//  array3_double tmp(nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, Ey);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[i][j][k];
+//  return arr;
+//}
 /*! get Electric Field component Z array cell without the ghost cells */
-arr3_double EMfields3D::getEzc()
-{
-  array3_double tmp(nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, Ez);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getEzc()
+//{
+//  array3_double tmp(nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, Ez);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[i][j][k];
+//  return arr;
+//}
 /*! get Magnetic Field component X array cell without the ghost cells */
-arr3_double EMfields3D::getBxc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Bxc[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getBxc() {
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=Bxc[i][j][k];
+//  return arr;
+//}
 /*! get Magnetic Field component Y array cell without the ghost cells */
-arr3_double EMfields3D::getByc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Byc[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getByc() {
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=Byc[i][j][k];
+//  return arr;
+//}
 /*! get Magnetic Field component Z array cell without the ghost cells */
-arr3_double EMfields3D::getBzc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Bzc[i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getBzc() {
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=Bzc[i][j][k];
+//  return arr;
+//}
 /*! get species density component X array cell without the ghost cells */
-arr3_double EMfields3D::getRHOcs(int is)
-{
-  array4_double tmp(ns,nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, is, rhons);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getRHOcs(int is)
+//{
+//  array4_double tmp(ns,nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, is, rhons);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+//  return arr;
+//}
 
 /*! get Magnetic Field component X array species is cell without the ghost cells */
-arr3_double EMfields3D::getJxsc(int is)
-{
-  array4_double tmp(ns,nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, is, Jxs);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getJxsc(int is)
+//{
+//  array4_double tmp(ns,nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, is, Jxs);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+//  return arr;
+//}
 
 /*! get current component Y array species is cell without the ghost cells */
-arr3_double EMfields3D::getJysc(int is)
-{
-  array4_double tmp(ns,nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, is, Jys);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getJysc(int is)
+//{
+//  array4_double tmp(ns,nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, is, Jys);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+//  return arr;
+//}
 /*! get current component Z array species is cell without the ghost cells */
-arr3_double EMfields3D::getJzsc(int is)
-{
-  array4_double tmp(ns,nxc,nyc,nzc);
-  get_grid().interpN2C(tmp, is, Jzs);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-  return arr;
-}
+//arr3_double EMfields3D::getJzsc(int is)
+//{
+//  array4_double tmp(ns,nxc,nyc,nzc);
+//  get_grid().interpN2C(tmp, is, Jzs);
+//
+//  for (int i = 1; i < nxc-1; i++)
+//    for (int j = 1; j < nyc-1; j++)
+//      for (int k = 1; k < nzc-1; k++)
+//        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+//  return arr;
+//}
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;

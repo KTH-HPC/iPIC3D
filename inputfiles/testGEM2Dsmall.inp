@@ -5,8 +5,8 @@ RestartDirName = data
 # New flags:
 Case              = GEM       # Select the case
 PoissonCorrection = no       # Poisson correction
-WriteMethod       = shdf5     # 
-SimulationName    = testGEM  # Simulation name for the output
+WriteMethod       = pvtk
+SimulationName    = testGEM8p  # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.0195
@@ -17,7 +17,7 @@ delta = 0.5
     
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.15          # dt = time step   
-ncycles = 4802    # cycles
+ncycles = 8001    # cycles
 th = 1.0          # th =   decentering parameter
 c = 1.0
 
@@ -25,17 +25,17 @@ c = 1.0
 Smooth = 0.2      # Smoothing value (5-points stencil)
 
 Lx = 20   # Lx = simulation box length - x direction    
-Ly = 5   # Ly = simulation box length - y direction   
-Lz = 5   # Lz = simulation box length - z direction
-nxc = 128  # nxc = number of cells - x direction        
-nyc = 32  # nyc = number of cells - y direction 
-nzc = 32  # nzc = number of cells - z direction 
+Ly = 10  # Ly = simulation box length - y direction   
+Lz = 10   # Lz = simulation box length - z direction
+nxc = 240  # nxc = number of cells - x direction        
+nyc = 120  # nyc = number of cells - y direction 
+nzc = 1  # nzc = number of cells - z direction 
 
 # %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
 # number of MPI subdomains in each direction
-XLEN = 2
-YLEN = 2
-ZLEN = 2
+XLEN = 6
+YLEN = 3
+ZLEN = 1
 # topology of subdomains in each dimension (1=true, 0=false)
 PERIODICX = 1
 PERIODICY = 0
@@ -128,9 +128,9 @@ bcPHIfaceZleft  = 1
 # mover predictor corrector iteration 
    NiterMover  = 3
 # Output for field 
-   FieldOutputCycle=100
+   FieldOutputCycle=50
 # Output for particles if 1 it doesnt save particles data
-   ParticlesOutputCycle = 10
+   ParticlesOutputCycle = 0
 # restart cycle 
-   RestartOutputCycle = 200000
+   RestartOutputCycle = 0
 

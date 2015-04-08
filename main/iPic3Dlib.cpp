@@ -19,7 +19,7 @@
 #include "WriteOutputParallel.h"
 #include "OutputWrapperFPP.h"
 #endif
-//
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -73,7 +73,6 @@ int c_Solver::Init(int argc, char **argv) {
   myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
-  verbose = col->getVerbose();
   restart_cycle = col->getRestartOutputCycle();
   SaveDirName = col->getSaveDirName();
   RestartDirName = col->getRestartDirName();
@@ -141,19 +140,14 @@ int c_Solver::Init(int argc, char **argv) {
   }
 
   // Allocation of particles
-  // part = new Particles3D[ns];
   part = (Particles3D*) malloc(sizeof(Particles3D)*ns);
   for (int i = 0; i < ns; i++)
   {
     new(&part[i]) Particles3D(i,col,vct,grid);
-    //part[i] = new Particles3D(i, col, vct, grid);
-    //part[i].allocate(i, col, vct, grid);
   }
 
   // Initial Condition for PARTICLES if you are not starting from RESTART
   if (restart_status == 0) {
-    // wave = new Planewave(col, EMf, grid, vct);
-    // wave->Wave_Rotated(part); // Single Plane Wave
     for (int i = 0; i < ns; i++)
     {
       if      (col->getCase()=="ForceFree") part[i].force_free(EMf);
@@ -165,11 +159,23 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
-  if (col->getWriteMethod() == "shdf5")
+  //allocate test particles if any
+  nstestpart = col->getNsTestPart();
+  if(nstestpart>0){
+	  dprintf("Initialize Test Particles %d species", nstestpart);
+	  testpart = (Particles3D*) malloc(sizeof(Particles3D)*nstestpart);
+	  for (int i = 0; i < nstestpart; i++)
+	  {
+	     new(&testpart[i]) Particles3D(i+ns,col,vct,grid);//species id for test particles is increased by ns
+	     testpart[i].pitch_angle_energy(EMf);
+	   }
+  }
+
+  if ( Parameters::get_doWriteOutput() &&col->getWriteMethod() == "shdf5")
   {
     #ifndef NO_HDF5
-  outputWrapperFPP = new OutputWrapperFPP;
-  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns);
+	  outputWrapperFPP = new OutputWrapperFPP;
+	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns);
     #endif
   }
 
@@ -248,10 +254,7 @@ void c_Solver::CalculateMoments() {
         unsupported_value_error(Parameters::get_MOMENTS_TYPE());
     }
   }
-  //for (int i = 0; i < ns; i++)
-  //{
-  //  EMf->sumMomentsOld(part[i], grid, vct);
-  //}
+
   EMf->setZeroDerivedMoments();
   // sum all over the species
   EMf->sumOverSpecies();
@@ -352,26 +355,38 @@ bool c_Solver::ParticlesMover()
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
+
+
+  /* --------------------------------------- */
+  /* Test Particles use AoS classical mover */
+  /* --------------------------------------- */
+  for (int i = 0; i < nstestpart; i++)
+  {
+	  testpart[i].mover_PC_AoS(EMf);
+	  testpart[i].separate_and_send_particles();
+	  testpart[i].recommunicate_particles_until_done(1);
+  }
+
   return (false);
 }
 
 void c_Solver::WriteRestart(int cycle)
 {
-  bool do_WriteRestart = (cycle % restart_cycle == 0 && restart_cycle!=0);
-  if(!do_WriteRestart)
-    return;
 
-  #ifndef NO_HDF5
-  convertParticlesToSynched(); // hack
+  #ifdef NO_HDF5
+	eprintf("must compile with HDF5");
+  #else
   // write the RESTART file
-  if (restart_cycle!=0)
-      writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+  if (restart_cycle>0 && cycle%restart_cycle==0){
+	  convertParticlesToSynched(); // hack
+	  writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+  }
   #endif
 }
 
 // write the conserved quantities
 void c_Solver::WriteConserved(int cycle) {
-  if(cycle % col->getDiagnosticsOutputCycle() == 0)
+  if(col->getDiagnosticsOutputCycle() > 0 && cycle % col->getDiagnosticsOutputCycle() == 0)
   {
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
@@ -443,8 +458,8 @@ void c_Solver::WriteVirtualSatelliteTraces()
 }
 
 void c_Solver::WriteFields(int cycle) {
-  if(col->field_output_is_off())
-    return;
+  if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
+
   #ifdef NO_HDF5
     eprintf("must compile with HDF5");
   #else
@@ -458,7 +473,7 @@ void c_Solver::WriteFields(int cycle) {
     {
         // Pressure tensor is available
         fetch_outputWrapperFPP().append_output(
-          "Eall + Ball + rhos + Jsall + pressure", cycle);
+          "Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
     }
   }
   #endif
@@ -466,8 +481,8 @@ void c_Solver::WriteFields(int cycle) {
 
 void c_Solver::WriteParticles(int cycle)
 {
-  if(col->particle_output_is_off())
-    return;
+  if(col->particle_output_is_off() || cycle%(col->getParticlesOutputCycle())!=0) return;
+
   #ifdef NO_HDF5
     eprintf("NO_HDF5 requires OutputMethod=none")
   #else
@@ -489,11 +504,24 @@ void c_Solver::WriteParticles(int cycle)
   #endif // NO_HDF5
 }
 
+void c_Solver::WriteTestParticles(int cycle)
+{
+  if(col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
+
+  #ifdef NO_HDF5
+  	  eprintf("NO_HDF5 requires OutputMethod=none")
+  #else
+  	  flushFullBuffer(cycle);
+  	  bufferTestParticlesToSynched();
+  #endif
+}
+
 // This needs to be separated into methods that save particles
 // and methods that save field data
 //
 void c_Solver::WriteOutput(int cycle) {
-
+	  if (vct->getCartesian_rank() == 0)
+	      cout << "*** Start WriteOutput  ***" << endl;
   // The quickest things should be written first.
 
   WriteConserved(cycle);
@@ -537,21 +565,30 @@ void c_Solver::WriteOutput(int cycle) {
   }
   else if (col->getWriteMethod() == "shdf5")
   {
-    // write fields-related data
-    if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-          WriteFields(cycle);
-    // This should be invoked by user if desired
-    // by means of a callback mechanism.
-    //WriteVirtualSatelliteTraces();
+		WriteRestart(cycle);
 
-    // write particles-related data
-    //
-    // this also writes field data...
+	    WriteFields(cycle);
+
+	    WriteParticles(cycle);
+
+	    if(nstestpart > 0) WriteTestParticles(cycle);
+
+	    // This should be invoked by user if desired
+	    // by means of a callback mechanism.
+	    //WriteVirtualSatelliteTraces();
     
-        WriteRestart(cycle);
-    
-      if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-        WriteParticles(cycle);
+  }
+  else if (col->getWriteMethod() == "pvtk")
+  {
+      //restart file still required
+	  WriteRestart(cycle);
+
+	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
+		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
+
+	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
+
   }
   else if (col->getWriteMethod() == "default")
   {
@@ -572,7 +609,7 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  if (col->getCallFinalize())
+  if (col->getCallFinalize() && Parameters::get_doWriteOutput())
   {
     #ifndef NO_HDF5
     convertParticlesToSynched();
@@ -584,11 +621,6 @@ void c_Solver::Finalize() {
   my_clock->stopTiming();
 }
 
-//void c_Solver::copyParticlesToSoA()
-//{
-//  for (int i = 0; i < ns; i++)
-//    part[i].copyParticlesToSoA();
-//}
 
 void c_Solver::pad_particle_capacities()
 {
@@ -615,6 +647,19 @@ void c_Solver::convertParticlesToSynched()
 {
   for (int i = 0; i < ns; i++)
     part[i].convertParticlesToSynched();
+}
+
+//flush to disk if test particle buffer is full
+void c_Solver::flushFullBuffer(int cycle){
+	if(cycle >0 && cycle % (col->getTestPartFlushCycle()*col->getTestParticlesOutputCycle()) == 0)
+		fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+}
+
+// buffering test particles
+void c_Solver::bufferTestParticlesToSynched()
+{
+  for (int i = 0; i < nstestpart; i++)
+    testpart[i].bufferTestParticlesToSynched();
 }
 
 int c_Solver::LastCycle() {
