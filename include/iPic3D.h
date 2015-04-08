@@ -16,9 +16,9 @@ class Timing;
 #include "assert.h"
 #include <string>
 using std::string;
-
+#ifndef NO_HDF5
 class OutputWrapperFPP;
-
+#endif
 namespace iPic3D {
 
   class c_Solver {
@@ -31,7 +31,9 @@ namespace iPic3D {
       grid(0),
       EMf(0),
       part(0),
+#ifndef NO_HDF5
       outputWrapperFPP(0),
+#endif
       Ke(0),
       momentum(0),
       Qremoved(0),
@@ -81,10 +83,12 @@ namespace iPic3D {
     double        *Qremoved;
     Timing        *my_clock;
 
+#ifndef NO_HDF5
     OutputWrapperFPP& fetch_outputWrapperFPP(){
       assert(outputWrapperFPP);
       return *outputWrapperFPP;}
     OutputWrapperFPP *outputWrapperFPP;
+#endif
 
     //bool verbose;
     string SaveDirName;

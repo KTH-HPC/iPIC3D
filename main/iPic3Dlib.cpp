@@ -13,9 +13,9 @@
 #include "EMfields3D.h"
 #include "Particles3D.h"
 #include "Timing.h"
+#include "ParallelIO.h"
 //
 #ifndef NO_HDF5
-#include "ParallelIO.h"
 #include "WriteOutputParallel.h"
 #include "OutputWrapperFPP.h"
 #endif
@@ -35,8 +35,9 @@ c_Solver::~c_Solver()
   delete vct; // process topology
   delete grid; // grid
   delete EMf; // field
+#ifndef NO_HDF5
   delete outputWrapperFPP;
-
+#endif
   // delete particles
   //
   if(part)
@@ -520,9 +521,6 @@ void c_Solver::WriteTestParticles(int cycle)
 // and methods that save field data
 //
 void c_Solver::WriteOutput(int cycle) {
-	  if (vct->getCartesian_rank() == 0)
-	      cout << "*** Start WriteOutput  ***" << endl;
-  // The quickest things should be written first.
 
   WriteConserved(cycle);
   // This should be invoked by user if desired
@@ -578,18 +576,6 @@ void c_Solver::WriteOutput(int cycle) {
 	    //WriteVirtualSatelliteTraces();
     
   }
-  else if (col->getWriteMethod() == "pvtk")
-  {
-      //restart file still required
-	  WriteRestart(cycle);
-
-	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
-
-	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
-
-  }
   else if (col->getWriteMethod() == "default")
   {
     if(col->getParticlesOutputCycle()==1)
@@ -606,6 +592,17 @@ void c_Solver::WriteOutput(int cycle) {
     invalid_value_error(col->getWriteMethod().c_str());
   }
   #endif
+
+  if (col->getWriteMethod() == "pvtk")
+    {
+
+  	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
+  		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
+
+  	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+  		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
+
+    }
 }
 
 void c_Solver::Finalize() {
@@ -651,8 +648,9 @@ void c_Solver::convertParticlesToSynched()
 
 //flush to disk if test particle buffer is full
 void c_Solver::flushFullBuffer(int cycle){
-	if(cycle >0 && cycle % (col->getTestPartFlushCycle()*col->getTestParticlesOutputCycle()) == 0)
+  /*	if(cycle >0 && cycle % (col->getTestPartFlushCycle()*col->getTestParticlesOutputCycle()) == 0)
 		fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+  */
 }
 
 // buffering test particles
