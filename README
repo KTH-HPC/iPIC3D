@@ -1,32 +1,9 @@
-
 To install and run iPic3D, you need to do the following:
 
-  # make sure that you have installed MPI and HDF5
-
-  # get the code:
-  git clone https://github.com/alecjohnson/iPic3D.git ipic3d
-  # or
-  git clone git@github.com:alecjohnson/iPic3D.git ipic3d
-
-  # set the following bootstrapping environment variable
-  # (e.g. in ~/.profile):
-  export IPIC_HOME="$HOME/ipic3d"
-
-  # if running on a system for which ipic3d/env/system_name
-  # exists, you just need to load the appropriate module, e.g.:
-  #
-  module use $IPIC_HOME/env/judge
-  module load ipic
-  #
-  # if porting to system_name, you can create a module for your
-  # system, e.g. by copying modules in env/judge and modifying
-  # as appropriate; when you succeed, please contribute your
-  # modules so that others can benefit from your work!
-  #
-  # if you do not have the module command (e.g. if you are
-  # running on your own laptop) then you need to define some
-  # environment variables by hand, e.g.:
-  #
+  # make sure that you have installed MPI 
+  # if you want to choose output other than 'pvtk', make sure that you have also installed HDF5
+  
+  # define some environment variables by hand, e.g.:
   # on a system with modules the appropriate directory
   # would be revealed with e.g. "module show hdf5-par":
   export HDF5_ROOT="/usr/local/hdf5-par"
@@ -48,8 +25,6 @@ To install and run iPic3D, you need to do the following:
   # get help
   ipic help
 
-If you want to use the new output format, you need to obtain
-the H5hut code from Jorge Amaya.  To compile and install it:
 
   # Unfortunately H5hut 1.99.12 does not work for HDF5 version
   # 1.8.13 or higher, because the HDF5 committee removed an
