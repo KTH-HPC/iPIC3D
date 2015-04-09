@@ -9,12 +9,14 @@
 #include "Particles3D.h"
 
 void OutputWrapperFPP::init_output_files(
-    Collective    *col,
-    VCtopology3D  *vct,
-    Grid3DCU      *grid,
-    EMfields3D    *EMf,
-    Particles3D   *part,
-    int ns)
+	    Collective    *col,
+	    VCtopology3D  *vct,
+	    Grid3DCU      *grid,
+	    EMfields3D    *EMf,
+	    Particles3D   *part,
+	    int 		  ns,
+	    Particles3D   *testpart,
+	    int 		  nstestpart)
 {
 #ifndef NO_HDF5
     cartesian_rank = vct->getCartesian_rank();
@@ -24,13 +26,18 @@ void OutputWrapperFPP::init_output_files(
     SaveDirName = col->getSaveDirName();
     RestartDirName = col->getRestartDirName();
     int restart_status = col->getRestart_status();
-    output_file = SaveDirName + "/proc" + num_proc_str + ".hdf";
+    output_file = SaveDirName + "/proc"   + num_proc_str + ".hdf";
+    restart_file= SaveDirName + "/restart"+ num_proc_str + ".hdf";
 
     // Initialize the output (simulation results and restart file)
     hdf5_agent.set_simulation_pointers(EMf, grid, vct, col);
 
-    for (int i = 0; i < ns; ++i)
+    for (int i = 0; i < ns; ++i){
       hdf5_agent.set_simulation_pointers_part(&part[i]);
+    }
+    for (int i = 0; i < nstestpart; ++i){
+      hdf5_agent.set_simulation_pointers_part(&testpart[i]);
+    }
 
     // Add the HDF5 output agent to the Output Manager's list
     output_mgr.push_back(&hdf5_agent);
@@ -59,8 +66,7 @@ void OutputWrapperFPP::init_output_files(
 #endif
 }
 
-void OutputWrapperFPP::append_output(
-  const char* tag, int cycle)
+void OutputWrapperFPP::append_output(const char* tag, int cycle)
 {
 #ifndef NO_HDF5
     hdf5_agent.open_append(output_file);
@@ -69,12 +75,29 @@ void OutputWrapperFPP::append_output(
 #endif
 }
 
-void OutputWrapperFPP::append_output(
-  const char* tag, int cycle, int sample)
+void OutputWrapperFPP::append_output(const char* tag, int cycle, int sample)
 {
 #ifndef NO_HDF5
     hdf5_agent.open_append(output_file);
     output_mgr.output(tag, cycle, sample);
     hdf5_agent.close();
+#endif
+}
+
+
+void OutputWrapperFPP::append_restart(int cycle)
+{
+#ifndef NO_HDF5
+	if(cycle==0)
+		hdf5_agent.open(restart_file);
+	else
+		hdf5_agent.open_append(restart_file);
+
+		output_mgr.output("proc_topology ", cycle);
+		output_mgr.output("Eall + Ball + rhos", cycle);
+		output_mgr.output("position + velocity + q ", cycle, 0);
+		output_mgr.output("testpartpos + testpartvel + testpartcharge", cycle, 0);
+		output_mgr.output("last_cycle", cycle);
+		hdf5_agent.close();
 #endif
 }

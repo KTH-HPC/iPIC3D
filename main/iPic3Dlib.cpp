@@ -163,7 +163,6 @@ int c_Solver::Init(int argc, char **argv) {
   //allocate test particles if any
   nstestpart = col->getNsTestPart();
   if(nstestpart>0){
-	  dprintf("Initialize Test Particles %d species", nstestpart);
 	  testpart = (Particles3D*) malloc(sizeof(Particles3D)*nstestpart);
 	  for (int i = 0; i < nstestpart; i++)
 	  {
@@ -172,11 +171,11 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() &&col->getWriteMethod() == "shdf5")
+  if ( Parameters::get_doWriteOutput() && (col->getWriteMethod() == "shdf5"||col->getCallFinalize()))
   {
     #ifndef NO_HDF5
 	  outputWrapperFPP = new OutputWrapperFPP;
-	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns);
+	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns,testpart,nstestpart);
     #endif
   }
 
@@ -194,13 +193,6 @@ int c_Solver::Init(int argc, char **argv) {
   my_clock = new Timing(myrank);
 
   return 0;
-}
-
-void c_Solver::sortParticles() {
-  
-  for(int species_idx=0; species_idx<ns; species_idx++)
-    part[species_idx].sort_particles_serial();
-  
 }
 
 void c_Solver::CalculateMoments() {
@@ -371,18 +363,71 @@ bool c_Solver::ParticlesMover()
   return (false);
 }
 
+void c_Solver::WriteOutput(int cycle) {
+
+  WriteConserved(cycle);
+
+  if(!Parameters::get_doWriteOutput())  return;
+
+  if (col->getWriteMethod() == "pvtk"){
+
+  	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
+  		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
+
+  	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+  		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
+
+  }else{
+
+		#ifdef NO_HDF5
+			eprintf("The selected output option must be compiled with HDF5");
+
+		#else
+			if (col->getWriteMethod() == "H5hut"){
+
+			  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
+				WriteFieldsH5hut(ns, grid, EMf, col, vct, cycle);
+			  if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+				WritePartclH5hut(ns, grid, part, col, vct, cycle);
+
+			}else if (col->getWriteMethod() == "phdf5"){
+
+			  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
+				WriteOutputParallel(grid, EMf, part, col, vct, cycle);
+
+			  if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
+			  {
+				if(MPIdata::get_rank()==0)
+				  warning_printf("WriteParticlesParallel() is not yet implemented.");
+			  }
+
+			}else if (col->getWriteMethod() == "shdf5"){
+					WriteRestart(cycle);
+
+					WriteFields(cycle);
+
+					WriteParticles(cycle);
+
+					if(nstestpart > 0) WriteTestParticles(cycle);
+
+			}else{
+			  warning_printf(
+				"Invalid output option. Options are: H5hut, phdf5, shdf5, pvtk");
+			  invalid_value_error(col->getWriteMethod().c_str());
+			}
+		#endif
+  	  }
+}
+
 void c_Solver::WriteRestart(int cycle)
 {
 
-  #ifdef NO_HDF5
-	eprintf("must compile with HDF5");
-  #else
-  // write the RESTART file
   if (restart_cycle>0 && cycle%restart_cycle==0){
 	  convertParticlesToSynched(); // hack
-	  writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+	  //writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+	  fetch_outputWrapperFPP().append_restart(cycle);
   }
-  #endif
+
 }
 
 // write the conserved quantities
@@ -461,156 +506,45 @@ void c_Solver::WriteVirtualSatelliteTraces()
 void c_Solver::WriteFields(int cycle) {
   if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
 
-  #ifdef NO_HDF5
-    eprintf("must compile with HDF5");
-  #else
   if(cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle)
   {
-    timeTasks_set_task(TimeTasks::WRITE_FIELDS);
-    if (col->getWriteMethod() == "Parallel") {
-        WriteOutputParallel(grid, EMf, col, vct, cycle);
-    }
-    else // OUTPUT to large file, called proc**
-    {
-        // Pressure tensor is available
-        fetch_outputWrapperFPP().append_output(
-          "Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
-    }
+	  fetch_outputWrapperFPP().append_output("Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
   }
-  #endif
 }
 
 void c_Solver::WriteParticles(int cycle)
 {
   if(col->particle_output_is_off() || cycle%(col->getParticlesOutputCycle())!=0) return;
 
-  #ifdef NO_HDF5
-    eprintf("NO_HDF5 requires OutputMethod=none")
-  #else
-
-  timeTasks_set_task(TimeTasks::WRITE_PARTICLES);
-
   // this is a hack
-  convertParticlesToSynched();
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToSynched();
 
-  if (col->getWriteMethod() == "Parallel")
-  {
-    dprintf("pretending to write particles (not yet implemented)");
-  }
-  else
-  {
-    fetch_outputWrapperFPP().append_output(
-      "position + velocity + q ", cycle, 0);
-  }
-  #endif // NO_HDF5
+  fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+
 }
 
 void c_Solver::WriteTestParticles(int cycle)
 {
   if(col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
 
-  #ifdef NO_HDF5
-  	  eprintf("NO_HDF5 requires OutputMethod=none")
-  #else
-  	  flushFullBuffer(cycle);
-  	  bufferTestParticlesToSynched();
-  #endif
+  // this is a hack
+  for (int i = 0; i < nstestpart; i++)
+    testpart[i].convertParticlesToSynched();
+
+  fetch_outputWrapperFPP().append_output("testpartpos + testpartvel + testpartcharge", cycle, 0);
 }
 
 // This needs to be separated into methods that save particles
 // and methods that save field data
 //
-void c_Solver::WriteOutput(int cycle) {
-
-  WriteConserved(cycle);
-  // This should be invoked by user if desired
-  // by means of a callback mechanism.
-  //WriteVelocityDistribution(cycle);
-
-  // mechanism to suppress output
-  if(!Parameters::get_doWriteOutput())
-    return;
-
-  #ifndef NO_HDF5 // array output is only supported for HDF5
-  // once phdf5 is properly supported,
-  // let's change "Parallel" to mean "phdf5".
-  if (col->getWriteMethod() == "H5hut"
-   || col->getWriteMethod() == "Parallel")
-  {
-    /* -------------------------------------------- */
-    /* Parallel HDF5 output using the H5hut library */
-    /* -------------------------------------------- */
-
-    if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-      WriteFieldsH5hut(ns, grid, EMf, col, vct, cycle);
-    if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-      WritePartclH5hut(ns, grid, part, col, vct, cycle);
-  }
-  else if (col->getWriteMethod() == "phdf5")
-  {
-    /* -------------------------------------------- */
-    /* Parallel output using basic hdf5 */
-    /* -------------------------------------------- */
-
-    if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-      WriteOutputParallel(grid, EMf, part, col, vct, cycle);
-    if (!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-    {
-      if(!MPIdata::get_rank())
-        warning_printf("WriteParticlesParallel() is not yet implemented.");
-      //WritePartclH5hut(ns, grid, part, col, vct, cycle);
-    }
-  }
-  else if (col->getWriteMethod() == "shdf5")
-  {
-		WriteRestart(cycle);
-
-	    WriteFields(cycle);
-
-	    WriteParticles(cycle);
-
-	    if(nstestpart > 0) WriteTestParticles(cycle);
-
-	    // This should be invoked by user if desired
-	    // by means of a callback mechanism.
-	    //WriteVirtualSatelliteTraces();
-    
-  }
-  else if (col->getWriteMethod() == "default")
-  {
-    if(col->getParticlesOutputCycle()==1)
-    {
-      warning_printf(
-        "ParticlesOutputCycle=1 now means output particles with every cycle.\n"
-        "\tParticlesOutputCycle = 0 turns off particle output.");
-    }
-    eprintf("The new name for serial hdf5 output is shdf5.\n"
-      "\tselect WriteMethod=shdf5.");
-  }
-  else
-  {
-    invalid_value_error(col->getWriteMethod().c_str());
-  }
-  #endif
-
-  if (col->getWriteMethod() == "pvtk")
-    {
-
-  	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-  		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
-
-  	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-  		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
-
-    }
-}
-
 void c_Solver::Finalize() {
   if (col->getCallFinalize() && Parameters::get_doWriteOutput())
   {
     #ifndef NO_HDF5
     convertParticlesToSynched();
-    writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, vct, col, grid, EMf, part, 0);
+    //writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, vct, col, grid, EMf, part, 0);
+    fetch_outputWrapperFPP().append_restart((col->getNcycles() + first_cycle) - 1);
     #endif
   }
 
@@ -618,6 +552,12 @@ void c_Solver::Finalize() {
   my_clock->stopTiming();
 }
 
+void c_Solver::sortParticles() {
+
+  for(int species_idx=0; species_idx<ns; species_idx++)
+    part[species_idx].sort_particles_serial();
+
+}
 
 void c_Solver::pad_particle_capacities()
 {
@@ -644,6 +584,9 @@ void c_Solver::convertParticlesToSynched()
 {
   for (int i = 0; i < ns; i++)
     part[i].convertParticlesToSynched();
+
+  for (int i = 0; i < nstestpart; i++)
+    testpart[i].convertParticlesToSynched();
 }
 
 //flush to disk if test particle buffer is full

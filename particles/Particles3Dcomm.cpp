@@ -251,34 +251,20 @@ if( !isTestParticle ){
   //
   // SoA particle representation
   //
-if( !isTestParticle ){
-	  // velocities
-	  u.reserve(initial_capacity);
-	  v.reserve(initial_capacity);
-	  w.reserve(initial_capacity);
-	  // charge
-	  q.reserve(initial_capacity);
-	  // positions
-	  x.reserve(initial_capacity);
-	  y.reserve(initial_capacity);
-	  z.reserve(initial_capacity);
-	  // subcycle time
-	  t.reserve(initial_capacity);
-}else if( !col->testparticle_output_is_off() ){
-	  //Test Particle Reserves 10*initial_capacity for buffering
-	  // velocities
-	  u.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  v.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  w.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  // charge
-	  //q.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  // positions
-	  x.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  y.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  z.reserve(initial_capacity*col->getTestPartFlushCycle());
-	  // subcycle time
-	  //t.reserve(initial_capacity*col->getTestPartFlushCycle());
-}
+
+  // velocities
+  u.reserve(initial_capacity);
+  v.reserve(initial_capacity);
+  w.reserve(initial_capacity);
+  // charge
+  q.reserve(initial_capacity);
+  // positions
+  x.reserve(initial_capacity);
+  y.reserve(initial_capacity);
+  z.reserve(initial_capacity);
+  // subcycle time
+  t.reserve(initial_capacity);
+
   //
   // AoS particle representation
   //
@@ -365,7 +351,7 @@ void Particles3Dcomm::resize_SoA(int nop)
   // allocate space for particles including padding
   //
   const int padded_nop = roundup_to_multiple(nop,DVECWIDTH);
-  if(is_output_thread()) dprintf("allocating to hold %d", padded_nop);
+  //if(is_output_thread()) dprintf("allocating to hold %d", padded_nop);
   u.reserve(padded_nop);
   v.reserve(padded_nop);
   w.reserve(padded_nop);
@@ -385,7 +371,7 @@ void Particles3Dcomm::resize_SoA(int nop)
   y.resize(nop);
   z.resize(nop);
   t.resize(nop);
-  if(is_output_thread()) dprintf("done resizing to hold %d", nop);
+  //if(is_output_thread()) dprintf("done resizing to hold %d", nop);
  }
 }
 // A much faster version of this is at EMfields3D::sumMoments
@@ -1858,7 +1844,7 @@ void Particles3Dcomm::copyParticlesToSoA()
   timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_SOA);
   const int nop = _pcls.size();
   // create memory for SoA representation
-  if(is_output_thread()) dprintf("copying to struct of arrays");
+  //if(is_output_thread()) dprintf("copying to struct of arrays");
   resize_SoA(nop);
  #ifndef __MIC__stub // replace with __MIC__ when this has been debugged
   #pragma omp for
