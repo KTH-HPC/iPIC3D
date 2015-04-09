@@ -5,7 +5,7 @@ RestartDirName = data
 # New flags:
 Case              = GEM       # Select the case
 PoissonCorrection = no       # Poisson correction
-WriteMethod       = pvtk
+WriteMethod       = shdf5
 SimulationName    = GEMTestParticle  # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
@@ -17,7 +17,7 @@ delta = 0.5
     
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.15          # dt = time step   
-ncycles = 11    # cycles
+ncycles = 12    # cycles
 th = 1.0          # th =   decentering parameter
 c = 1.0
 
