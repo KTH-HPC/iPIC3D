@@ -9,6 +9,7 @@
 #include "VCtopology3D.h"
 #include "Particles3Dcomm.h"
 #include "EMfields3D.h"
+#include "math.h"
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -360,6 +361,7 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 
 		const string tags0[]={"B", "E", "Je", "Ji"};
 		float writebuffer[nzn-3][nyn-3][nxn-3][3];
+		float tmpX, tmpY, tmpZ;
 
 		for(int tagid=0;tagid<4;tagid++){
 		 if (outputTag.find(tags0[tagid], 0) == string::npos) continue;
@@ -369,9 +371,13 @@ void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *co
 			 for(int iz=0;iz<nzn-3;iz++)
 				  for(int iy=0;iy<nyn-3;iy++)
 					  for(int ix= 0;ix<nxn-3;ix++){
-						  writebuffer[iz][iy][ix][0] = (float)EMf->getBxTot(ix+1, iy+1, iz+1);
-						  writebuffer[iz][iy][ix][1] = (float)EMf->getByTot(ix+1, iy+1, iz+1);
-						  writebuffer[iz][iy][ix][2] = (float)EMf->getBzTot(ix+1, iy+1, iz+1);
+						  tmpX = (float)EMf->getBxTot(ix+1, iy+1, iz+1);
+						  tmpY = (float)EMf->getByTot(ix+1, iy+1, iz+1);
+						  tmpZ = (float)EMf->getBzTot(ix+1, iy+1, iz+1);
+
+						  writebuffer[iz][iy][ix][0] =  (fabs(tmpX) < 1E-16) ?0.0 : tmpX;
+						  writebuffer[iz][iy][ix][1] =  (fabs(tmpY) < 1E-16) ?0.0 : tmpY;
+						  writebuffer[iz][iy][ix][2] =  (fabs(tmpZ) < 1E-16) ?0.0 : tmpZ;
 					  }
 
 	      //Write VTK header

@@ -224,11 +224,7 @@ void Particles3D::maxwellian(Field * EMf)
 
 /** pitch_angle_energy initialization (Assume B on z only) for test particles */
 void Particles3D::pitch_angle_energy(Field * EMf) {
-    if (vct->getCartesian_rank() == 0){
-    	cout << "------------------------------------------" << endl;
-        cout << "Initialize Test Particle "<< ns << " with pitch angle "<< pitch_angle << ", energy " << energy << ", qom " << qom << ", npcel "<< npcel<< endl;
-        cout << "------------------------------------------" << endl;
-    }
+
     /* initialize random generator with different seed on different processor */
     srand(vct->getCartesian_rank()+2);
     assert_eq(_pcls.size(),0);
@@ -267,6 +263,11 @@ void Particles3D::pitch_angle_energy(Field * EMf) {
             }
     const int num_ids = 1;
     longid id_list[num_ids] = {0};
+    if (vct->getCartesian_rank() == 0){
+    	cout << "------------------------------------------" << endl;
+        cout << "Initialize Test Particle "<< ns << " with pitch angle "<< pitch_angle << ", energy " << energy << ", qom " << qom << ", npcel "<< counter<< endl;
+        cout << "------------------------------------------" << endl;
+    }
 }
 
 

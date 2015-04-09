@@ -362,6 +362,7 @@ public:
       this->output_adaptor.write("/collective/Th", _col->getTh());
       this->output_adaptor.write("/collective/Ncycles", _col->getNcycles());
       this->output_adaptor.write("/collective/Ns", _col->getNs());
+      this->output_adaptor.write("/collective/NsTestPart", _col->getNsTestPart());
       this->output_adaptor.write("/collective/c", _col->getC());
       this->output_adaptor.write("/collective/Smooth", _col->getSmooth());
 
@@ -401,11 +402,20 @@ public:
         this->output_adaptor.write("/collective/species_" + ii.str() + "/u0", _col->getU0(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/v0", _col->getV0(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/w0", _col->getW0(i));
-
-
-
-
       };
+
+      const int nstestpart = _col->getNsTestPart();
+      for (int i = 0; i < nstestpart; ++i) {
+        stringstream ii;
+        ii << (i+ns);
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/Npcelx", _col->getNpcelx(i+ns));
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/Npcely", _col->getNpcely(i+ns));
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/Npcelz", _col->getNpcelz(i+ns));
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/qom", 	  _col->getQOM(i+ns));
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/pitch_angle", _col->getPitchAngle(i));
+        this->output_adaptor.write("/collective/testspecies_" + ii.str() + "/energy", 	   _col->getEnergy(i));
+      };
+
     }
 
     if (tag.find("total_topology", 0) != string::npos) {
