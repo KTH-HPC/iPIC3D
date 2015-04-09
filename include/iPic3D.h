@@ -10,7 +10,6 @@ class Timing;
 
 #ifndef NO_HDF5
 #include "mpi.h"
-#include "Restart3D.h"
 #endif
 #include "ipicfwd.h"
 #include "assert.h"

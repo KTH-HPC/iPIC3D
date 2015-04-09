@@ -283,7 +283,6 @@ template < class Toa > class myOutputAgent:public PSK::OutputAgent < Toa > {
   VCtopology3D *_vct;
   Collective *_col;
   int ns;
-  // std::vector<Particles1DX*> _part;
   std::vector < Particles * >_part;
 
 public:
@@ -301,6 +300,9 @@ public:
     _part.push_back(part);
   }
 
+//  void set_simulation_pointers_testpart(Particles * part) {
+//    _testpart.push_back(part);
+//  }
 
   /** method to write on disk. Acceptable tags are:
 
@@ -607,11 +609,10 @@ public:
   }
 
   void output(const string & tag, int cycle, int sample) {
-    stringstream ss;
     stringstream cc;
-    ss << MPIdata::instance().get_rank();
     cc << cycle;
     const int ns = _col->getNs();
+    const int nstestpart = _col->getNsTestPart();
 
     // Particle position
     if (tag.find("position", 0) != string::npos & sample == 0) {
@@ -623,6 +624,16 @@ public:
         this->output_adaptor.write("/particles/species_" + ii.str() + "/z/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getZall());
       }
     }
+    // Test Particle position
+    else if (tag.find("testpartpos", 0) != string::npos & sample == 0) {
+        for (int i = 0; i < nstestpart; ++i) {
+            stringstream ii;
+            ii << (_part[i+ns]->get_species_num());
+            this->output_adaptor.write("/testparticles/species_" + ii.str() + "/x/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getXall());
+            this->output_adaptor.write("/testparticles/species_" + ii.str() + "/y/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getYall());
+            this->output_adaptor.write("/testparticles/species_" + ii.str() + "/z/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getZall());
+        }
+   }
     else if (tag.find("x", 0) != string::npos & sample == 0) {
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
@@ -673,7 +684,15 @@ public:
         this->output_adaptor.write("/particles/species_" + ii.str() + "/v/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getVall());
         this->output_adaptor.write("/particles/species_" + ii.str() + "/w/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getWall());
       }
-    }
+    }else if (tag.find("testpartvel", 0) != string::npos & sample == 0) {
+        for (int i = 0; i < nstestpart; ++i) {
+          stringstream ii;
+          ii << (_part[i+ns]->get_species_num());
+          this->output_adaptor.write("/testparticles/species_" + ii.str() + "/u/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getUall());
+          this->output_adaptor.write("/testparticles/species_" + ii.str() + "/v/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getVall());
+          this->output_adaptor.write("/testparticles/species_" + ii.str() + "/w/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getWall());
+        }
+      }
     else if (tag.find("u", 0) != string::npos & sample == 0) {
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
@@ -713,12 +732,22 @@ public:
         this->output_adaptor.write("/particles/species_" + ii.str() + "/w/cycle_" + cc.str(), PSK::Dimens(W.size()), W);
       }
     }
+
+
     // Particle charge
     if (tag.find("q", 0) != string::npos & sample == 0) {
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
         this->output_adaptor.write("/particles/species_" + ii.str() + "/q/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getQall());
+      }
+    }
+    // Test Particle charge
+    else if (tag.find("testpartcharge", 0) != string::npos & sample == 0) {
+      for (int i = 0; i < nstestpart; ++i) {
+        stringstream ii;
+        ii <<  (_part[i+ns]->get_species_num());
+        this->output_adaptor.write("/testparticles/species_" + ii.str() + "/q/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getQall());
       }
     }
     else if (tag.find("q", 0) != string::npos & sample != 0) {

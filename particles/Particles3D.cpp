@@ -265,8 +265,6 @@ void Particles3D::pitch_angle_energy(Field * EMf) {
                             create_new_particle(u,v,w,q,x,y,z);
                         }
             }
-
-    dprintf("number of particles of species %d: %d", ns, getNOP());
     const int num_ids = 1;
     longid id_list[num_ids] = {0};
 }

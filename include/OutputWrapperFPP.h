@@ -23,6 +23,7 @@ class OutputWrapperFPP
   string SaveDirName;
   string RestartDirName;
   string output_file;
+  string restart_file;
  public:
   void init_output_files(
     Collective    *col,
@@ -30,9 +31,12 @@ class OutputWrapperFPP
     Grid3DCU      *grid,
     EMfields3D    *EMf,
     Particles3D   *part,
-    int ns);
+    int 		  ns,
+    Particles3D   *testpart,
+    int 		  nstestpart);
   void append_output(const char* tag, int cycle);
   void append_output(const char* tag, int cycle, int sample);
+  void append_restart(int cycle);
 };
 
 #endif // OutputWrapperFPP_h
