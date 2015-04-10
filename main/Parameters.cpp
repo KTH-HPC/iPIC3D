@@ -63,4 +63,4 @@ bool Parameters::get_USING_AOS() { return USING_AOS; }
 //bool Parameters::get_SORTING_SOA() { return true; }
 //bool Parameters::get_USING_AOS() { return true; }
 //
-bool Parameters::get_doWriteOutput() { return true; }
+bool Parameters::get_doWriteOutput() { return false; }
