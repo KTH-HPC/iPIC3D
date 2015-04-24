@@ -421,13 +421,12 @@ void c_Solver::WriteOutput(int cycle) {
 
 void c_Solver::WriteRestart(int cycle)
 {
-
+#ifndef NO_HDF5
   if (restart_cycle>0 && cycle%restart_cycle==0){
 	  convertParticlesToSynched(); // hack
-	  //writeRESTART(RestartDirName, myrank, cycle, ns, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
 	  fetch_outputWrapperFPP().append_restart(cycle);
   }
-
+#endif
 }
 
 // write the conserved quantities
@@ -504,16 +503,20 @@ void c_Solver::WriteVirtualSatelliteTraces()
 }
 
 void c_Solver::WriteFields(int cycle) {
+
+#ifndef NO_HDF5
   if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
 
   if(cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle)
   {
 	  fetch_outputWrapperFPP().append_output("Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
   }
+#endif
 }
 
 void c_Solver::WriteParticles(int cycle)
 {
+#ifndef NO_HDF5
   if(col->particle_output_is_off() || cycle%(col->getParticlesOutputCycle())!=0) return;
 
   // this is a hack
@@ -521,18 +524,19 @@ void c_Solver::WriteParticles(int cycle)
     part[i].convertParticlesToSynched();
 
   fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
-
+#endif
 }
 
 void c_Solver::WriteTestParticles(int cycle)
 {
+#ifndef NO_HDF5
   if(col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
 
   // this is a hack
   for (int i = 0; i < nstestpart; i++)
     testpart[i].convertParticlesToSynched();
-
   fetch_outputWrapperFPP().append_output("testpartpos + testpartvel + testpartcharge", cycle, 0);
+#endif
 }
 
 // This needs to be separated into methods that save particles
