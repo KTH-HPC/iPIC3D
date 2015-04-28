@@ -269,7 +269,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     int displacementsC[]={0,nzc-1,(nyc-1)*nzc,nyc*nzc-1};
     MPI_Type_indexed(4, blocklengthC, displacementsC, MPI_DOUBLE, &cornertypeC);
     MPI_Type_commit(&cornertypeC);
-    
+
 
 
     //Define MPI Derived Data types for Node Halo Exchange
@@ -3280,7 +3280,7 @@ void EMfields3D::init()
 
     // communicate species densities to ghost nodes
     for (int is = 0; is < ns; is++) {
-      double ***moment0 = convert_to_arr3(rhons[ns]);
+      double ***moment0 = convert_to_arr3(rhons[is]);
       communicateNode_P(nxn, nyn, nzn, moment0, vct, this);
     }
 
