@@ -3280,7 +3280,7 @@ void EMfields3D::init()
 
     // communicate species densities to ghost nodes
     for (int is = 0; is < ns; is++) {
-      double ***moment0 = convert_to_arr3(rhons[ns]);
+      double ***moment0 = convert_to_arr3(rhons[is]);
       communicateNode_P(nxn, nyn, nzn, moment0, vct, this);
     }
 

@@ -243,13 +243,9 @@ void read_field_restart(
     status = H5Dclose(dataset_id);
 
     // open the charge density for species
-
-    stringstream *species_name = new stringstream[ns];
-    ss.str("");ss << lastcycle;
     for (int is = 0; is < ns; is++) {
-      species_name[is] << is;
-      string name_dataset = "/moments/species_" + species_name[is].str() + "/rho/cycle_" + ss.str();
-      dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+      ss.str("");ss << "/moments/species_" << is << "/rho/cycle_" << lastcycle;
+      dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
       status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
       status = H5Dclose(dataset_id);
       array4_double& rhons = *rhons_;
@@ -263,7 +259,6 @@ void read_field_restart(
     // close the hdf file
     status = H5Fclose(file_id);
     delete[]temp_storage;
-    delete[]species_name;
 }
 
 // extracted from Particles3Dcomm.cpp
