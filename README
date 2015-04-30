@@ -3,6 +3,18 @@ To install and run iPic3D, you need to do the following:
   # make sure that you have installed MPI 
   # if you want to choose output other than 'pvtk', make sure that you have also installed HDF5
   
+  # a quick start
+  mkdir build
+  cd build
+  cmake ..
+  make
+  mpiexec -n XXX ./iPic3D  inputfileXYZ.inp 
+
+  # some sample input files are available in folder inputfiles
+
+  # some of text the below may be out of date  
+  # get help
+  ipic help
   # define some environment variables by hand, e.g.:
   # on a system with modules the appropriate directory
   # would be revealed with e.g. "module show hdf5-par":
@@ -11,20 +23,6 @@ To install and run iPic3D, you need to do the following:
   export PATH=$IPIC_HOME/scripts:$PATH
   # this is used by the scripts in $IPIC_HOME/scripts
   export IPIC_MPIRUN="mpiexec"
-
-  # create a build directory
-  mkdir build
-  cd build
-  # configure
-  ipic cmake
-  # compile
-  make
-  # run
-  ipic run
-
-  # get help
-  ipic help
-
 
   # Unfortunately H5hut 1.99.12 does not work for HDF5 version
   # 1.8.13 or higher, because the HDF5 committee removed an
