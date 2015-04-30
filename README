@@ -6,6 +6,7 @@ To install and run iPic3D, you need to do the following:
   # a quick start
   mkdir build
   cd build
+  mkdir data
   cmake ..
   make
   mpiexec -n XXX ./iPic3D  inputfileXYZ.inp 
