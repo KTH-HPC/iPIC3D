@@ -1776,6 +1776,9 @@ void Particles3D::openbc_particles()
   const int capacity_out = roundup_to_multiple(nop_orig*0.1,DVECWIDTH);
   vector_SpeciesParticle injpcls(capacity_out);
 
+  /* initialize random generator to randomize particle location*/
+  srand(vct->getCartesian_rank() + 2);
+
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
     if(apply_openBC[dir_cnt]){
@@ -1808,9 +1811,9 @@ void Particles3D::openbc_particles()
 		    	   if(direction == 1) injy = (dir_cnt%2==0) ?(injy-yLow):(injy+yLow);
 		    	   if(direction == 2) injz = (dir_cnt%2==0) ?(injz-zLow):(injz+zLow);
 
-		    	   injx = injx + inju*dt;
-		    	   injy = injy + injv*dt;
-		    	   injz = injz + injw*dt;
+		    	   injx = injx + (0.5-rand()/double(RAND_MAX))*dx + inju*dt;
+		    	   injy = injy + (0.5-rand()/double(RAND_MAX))*dy + injv*dt;
+		    	   injz = injz + (0.5-rand()/double(RAND_MAX))*dz + injw*dt;
 
 		    	   //Add particle if it enter that sub-domain or the domain box?
 		    	   //assume create particle as long as it enters the domain box
