@@ -1551,6 +1551,9 @@ void Particles3D::repopulate_particles()
 {
   using namespace BCparticles;
 
+  // if this is not a boundary process then there is nothing to do
+  if(!vct->isBoundaryProcess()) return;
+
   // if there are no reemission boundaries then no one has anything to do
   const bool repop_bndry_in_X = !vct->getPERIODICX() &&
         (bcPfaceXleft == REEMISSION || bcPfaceXright == REEMISSION);
@@ -1561,12 +1564,8 @@ void Particles3D::repopulate_particles()
   const bool repopulation_boundary_exists =
         repop_bndry_in_X || repop_bndry_in_Y || repop_bndry_in_Z;
 
-  if(!repopulation_boundary_exists)
-    return;
+  if(!repopulation_boundary_exists) return;
 
-  // if this is not a boundary process then there is nothing to do
-  if(!vct->isBoundaryProcess())
-    return;
 
   // boundaries to repopulate
   //
@@ -1776,8 +1775,6 @@ void Particles3D::openbc_particles()
   const int capacity_out = roundup_to_multiple(nop_orig*0.1,DVECWIDTH);
   vector_SpeciesParticle injpcls(capacity_out);
 
-  /* initialize random generator to randomize particle location*/
-  srand(vct->getCartesian_rank() + 2);
 
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
@@ -1811,9 +1808,9 @@ void Particles3D::openbc_particles()
 		    	   if(direction == 1) injy = (dir_cnt%2==0) ?(injy-yLow):(injy+yLow);
 		    	   if(direction == 2) injz = (dir_cnt%2==0) ?(injz-zLow):(injz+zLow);
 
-		    	   injx = injx + (0.5-rand()/double(RAND_MAX))*dx + inju*dt;
-		    	   injy = injy + (0.5-rand()/double(RAND_MAX))*dy + injv*dt;
-		    	   injz = injz + (0.5-rand()/double(RAND_MAX))*dz + injw*dt;
+		    	   injx = injx + inju*dt;
+		    	   injy = injy + injv*dt;
+		    	   injz = injz + injw*dt;
 
 		    	   //Add particle if it enter that sub-domain or the domain box?
 		    	   //assume create particle as long as it enters the domain box
