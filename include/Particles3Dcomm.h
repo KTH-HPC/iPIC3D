@@ -235,7 +235,7 @@ public:
 protected:
   // pointers to topology and grid information
   // (should be const)
-  //
+  const Collective * col;
   const VirtualTopology3D * vct;
   const Grid * grid;
   //

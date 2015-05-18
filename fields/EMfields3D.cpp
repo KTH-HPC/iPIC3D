@@ -2473,7 +2473,8 @@ void EMfields3D::smooth(double value, arr3_double vector, int type)
     }
   }
 }
-/* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
+/* Interpolation smoothing: Smoothing (vector must already have ghost cells)
+ * TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value)
 {
   const Collective *col = &get_col();
@@ -4681,6 +4682,18 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
 		vectorX[1][j][k] = B0x;
 		vectorY[1][j][k] = B0y;
 		vectorZ[1][j][k] = B0z;
+
+		vectorX[2][j][k] = B0x;
+		vectorY[2][j][k] = B0y;
+		vectorZ[2][j][k] = B0z;
+
+		vectorX[3][j][k] = B0x;
+		vectorY[3][j][k] = B0y;
+		vectorZ[3][j][k] = B0z;
+
+		vectorX[4][j][k] = B0x;
+		vectorY[4][j][k] = B0y;
+		vectorZ[4][j][k] = B0z;
       }
   }
   /*

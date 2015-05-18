@@ -318,7 +318,7 @@ bool c_Solver::ParticlesMover()
       }
 
 	  //Should integrate BC into separate_and_send_particles
-	  part[i].openbc_particles();
+	  part[i].openbc_particles_outflow();
 	  part[i].separate_and_send_particles();
 
     }

@@ -112,11 +112,12 @@ Particles3Dcomm::~Particles3Dcomm() {
 // was Particles3Dcomm::allocate()
 Particles3Dcomm::Particles3Dcomm(
   int species_number,
-  CollectiveIO * col,
+  CollectiveIO * col_,
   VirtualTopology3D * vct_,
   Grid * grid_)
  :
   ns(species_number),
+  col(col_),
   vct(vct_),
   grid(grid_),
   pclIDgenerator(),
@@ -1093,8 +1094,10 @@ void Particles3Dcomm::apply_Xleft_BC(vector_SpeciesParticle& pcls, int start)
       // clear the remainder of the list
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 void Particles3Dcomm::apply_Yleft_BC(vector_SpeciesParticle& pcls, int start)
@@ -1135,8 +1138,10 @@ void Particles3Dcomm::apply_Yleft_BC(vector_SpeciesParticle& pcls, int start)
     case BCparticles::EXIT:
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 void Particles3Dcomm::apply_Zleft_BC(vector_SpeciesParticle& pcls, int start)
@@ -1170,8 +1175,10 @@ void Particles3Dcomm::apply_Zleft_BC(vector_SpeciesParticle& pcls, int start)
     case BCparticles::EXIT:
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 void Particles3Dcomm::apply_Xrght_BC(vector_SpeciesParticle& pcls, int start)
@@ -1207,8 +1214,10 @@ void Particles3Dcomm::apply_Xrght_BC(vector_SpeciesParticle& pcls, int start)
     case BCparticles::EXIT:
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 void Particles3Dcomm::apply_Yrght_BC(vector_SpeciesParticle& pcls, int start)
@@ -1249,8 +1258,10 @@ void Particles3Dcomm::apply_Yrght_BC(vector_SpeciesParticle& pcls, int start)
     case BCparticles::EXIT:
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 void Particles3Dcomm::apply_Zrght_BC(vector_SpeciesParticle& pcls, int start)
@@ -1284,8 +1295,10 @@ void Particles3Dcomm::apply_Zrght_BC(vector_SpeciesParticle& pcls, int start)
     case BCparticles::EXIT:
       pcls.resize(start);
       break;
-    case BCparticles::OPENBC:
-      break;
+    case BCparticles::OPENBCIn:
+    	break;
+    case BCparticles::OPENBCOut:
+    	break;
   }
 }
 

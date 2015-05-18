@@ -226,7 +226,7 @@ void Particles3D::maxwellian(Field * EMf)
 void Particles3D::pitch_angle_energy(Field * EMf) {
 
     /* initialize random generator with different seed on different processor */
-    srand(vct->getCartesian_rank()+2);
+    srand(vct->getCartesian_rank() + 3 + ns);
     assert_eq(_pcls.size(),0);
 
     double p0, pperp0, gyro_phase;
@@ -1737,23 +1737,152 @@ void Particles3D::repopulate_particles()
 // Open BC for particles: duplicate particles on the boundary,.
 // shift outside the box and update location to test if inside box
 // if so, add to particle list
-void Particles3D::openbc_particles()
+void Particles3D::openbc_particles_inflow()
+{
+  eprintf("openbc_particles_inflow has not yet been implemented");
+
+/*
+  if(!vct->isBoundaryProcess()) return;
+
+  using namespace BCparticles;
+  //This is a hack here to test injection on XLeft
+  if(!vct->getPERIODICX() && vct->noXleftNeighbor() && bcPfaceXleft == OPENBCIn){
+
+	dprintf( "******  Inflow OpenBC ******");
+    int delpcl = 0;
+    double delq=0.0;
+
+    //delete those exiting particles
+    int pidx = 0;
+    double pclX, pclY, pclZ;
+    while(pidx < getNOP()){
+      SpeciesParticle& pcl = _pcls[pidx];
+      pclX= pcl.get_x();
+      pclY= pcl.get_y();
+      pclZ= pcl.get_z();
+      if( pclX < 0 || pclX > Lx  || pclY < 0 || pclY > Ly || pclZ < 0 || pclZ > Lz){
+	delpcl ++;
+	delq += pcl.get_q();
+	delete_particle(pidx);
+      }else
+	pidx ++;
+    }
+
+    dprintf("delete %d pcl, %f charges, now NOP=%d",delpcl,delq,getNOP());
+    const int newpartStartID = getNOP();
+
+    //Create Maxwellian Uniformly distributed particles
+    srand(vct->getCartesian_rank() + time(0) + ns);dprintf("Seed =%d",vct->getCartesian_rank() + time(0) + ns);
+    const double FourPI = 16*atan(1.0);
+    const double q_sgn  = (qom / fabs(qom));
+    const double InjCellx = Vinj * dt; dprintf("Vinj=%f, dt=%f, InjCellx=%f",Vinj,dt,InjCellx);
+    //const double InjVol   = InjCellx*(dy*(grid->getNYC()-2))*(dz*(grid->getNZC()-2));
+    const double InjVol   = grid->getVOL()*InjCellx/dx;
+    const double q_tot_particle =  q_sgn*col->getRHOinit(ns)/FourPI*InjVol;
+    //const double q_tot_particle =  delq;
+    const double q_per_particle =  q_sgn*col->getRHOinit(ns)/FourPI*InjVol/npcel;
+    dprintf("q_tot_particle=%f, q_per_particle=%f",q_tot_particle,q_per_particle);
+
+    int nop_inject=0;
+    double q_inject = 0.0;
+    const double InjCellStartX = 0.0-InjCellx;
+    const double invRandMax = 1.0/double(RAND_MAX);
+
+
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++){
+
+    	/*
+    	//The below is uniformly distributed in location
+		for (int ii=0; ii < npcelx; ii++)
+		  for (int jj=0; jj < npcely; jj++)
+			for (int kk=0; kk < npcelz; kk++){
+
+			  double u,v,w,x,y,z;
+			  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
+			  //dprintf("sample_maxwellian %f, %f, %f, %f, %f, %f,%f,%f,%f)",u,v,w,uth, vth, wth,u0, v0, w0);
+
+			  //Uniform distribution
+			  x = (ii + .5) * (InjCellx / npcelx) + InjCellStartX;
+			  y = (jj + .5) * (dy / npcely) + grid->getYN(1, j, k);
+			  z = (kk + .5) * (dz / npcelz) + grid->getZN(1, j, k);
+
+			  //check location after one time step
+			  x += u*dt;
+			  y += v*dt;
+			  z += w*dt;
+
+			  //Add particle if it enters the domain box
+			  //here may need communicating those exiting particles
+			  if( x>0 && x<Lx && y>0 && y<Ly && z>0 && z<Lz){
+				create_new_particle(u,v,w,q_per_particle,x,y,z);
+				nop_inject ++;
+				q_inject += q_per_particle;
+			  }
+		}
+
+		//The below is randomly distributed in location
+		for (int pclid=0; pclid < npcel; pclid++){
+
+		  double u,v,w,x,y,z;
+		  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
+
+		  x = InjCellStartX		   + (rand()*invRandMax)*InjCellx;
+		  y = grid->getYN(1, j, k) + (rand()*invRandMax)*dy;
+		  z = grid->getZN(1, j, k) + (rand()*invRandMax)*dz;
+
+		  //check location after one time step
+		  x += u*dt;
+		  y += v*dt;
+		  z += w*dt;
+
+		  //Add particle if it enters the domain box
+		  //here may need communicating those exiting particles
+		  if( x>0 && x<Lx && y>0 && y<Ly && z>0 && z<Lz){
+			create_new_particle(u,v,w,q_tot_particle,x,y,z);
+			nop_inject ++;
+			q_inject += q_per_particle;
+		  }
+		}
+
+     }
+      
+     //the below part is for dividing over the number of entering particles
+      const int newnop = getNOP();
+      q_inject=0.0;
+      for(int startid=newpartStartID;startid<newnop;startid++){
+          SpeciesParticle& pcl = _pcls[startid];
+          pcl.fetch_q() /= nop_inject;
+          q_inject += pcl.get_q();
+	  	  if(startid==newpartStartID) dprintf("x, y,z, u, v, w, q=%f,%f,%f,%f,%f,%f,%f",pcl.get_x(),pcl.get_y(),pcl.get_z(),pcl.get_u(),pcl.get_v(),pcl.get_w(),pcl.get_q());
+      }
+
+      dprintf("create %d species %d  pcl,  now NOP= %d , inject Q=%f" ,nop_inject, ns, getNOP(),q_inject);
+   
+  }//end of injecting from Xleft
+  */
+}
+
+// Open BC for particles: duplicate particles on the boundary,.
+// shift outside the box and update location to test if inside box
+// if so, add to particle list
+void Particles3D::openbc_particles_outflow()
 {
   // if this is not a boundary process then there is nothing to do
   if(!vct->isBoundaryProcess()) return;
 
+  //The below is OpenBC outflow for all other boundaries
   using namespace BCparticles;
 
-  const bool openXleft = !vct->getPERIODICX() && vct->noXleftNeighbor() &&  bcPfaceXleft == OPENBC;
-  const bool openYleft = !vct->getPERIODICY() && vct->noYleftNeighbor() &&  bcPfaceYleft == OPENBC;
-  const bool openZleft = !vct->getPERIODICZ() && vct->noZleftNeighbor() &&  bcPfaceZleft == OPENBC;
+  const bool openXleft = !vct->getPERIODICX() && vct->noXleftNeighbor() &&  bcPfaceXleft == OPENBCOut;
+  const bool openYleft = !vct->getPERIODICY() && vct->noYleftNeighbor() &&  bcPfaceYleft == OPENBCOut;
+  const bool openZleft = !vct->getPERIODICZ() && vct->noZleftNeighbor() &&  bcPfaceZleft == OPENBCOut;
 
-  const bool openXright = !vct->getPERIODICX() && vct->noXrghtNeighbor() && bcPfaceXright == OPENBC;
-  const bool openYright = !vct->getPERIODICY() && vct->noYrghtNeighbor() && bcPfaceYright == OPENBC;
-  const bool openZright = !vct->getPERIODICZ() && vct->noZrghtNeighbor() && bcPfaceZright == OPENBC;
+  const bool openXright = !vct->getPERIODICX() && vct->noXrghtNeighbor() && bcPfaceXright == OPENBCOut;
+  const bool openYright = !vct->getPERIODICY() && vct->noYrghtNeighbor() && bcPfaceYright == OPENBCOut;
+  const bool openZright = !vct->getPERIODICZ() && vct->noZrghtNeighbor() && bcPfaceZright == OPENBCOut;
 
   if(!openXleft && !openYleft && !openZleft && !openXright && !openYright && !openZright)  return;
-  
 
   const int num_layers = 3;
   assert_gt(nxc-2, (openXleft+openXright)*num_layers); //excluding 2 ghost cells, #of cells should be larger than total # of openBC layers
@@ -1779,7 +1908,7 @@ void Particles3D::openbc_particles()
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
     if(apply_openBC[dir_cnt]){
-   //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
+    	  //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
 
 		  int pidx = 0;
 		  int direction = dir_cnt/2;
@@ -1831,8 +1960,6 @@ void Particles3D::openbc_particles()
 
   for(int outId=0;outId<nop_created;outId++)
 	  _pcls.push_back(injpcls[outId]);
-
-  
 }
 
 
