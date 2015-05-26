@@ -97,11 +97,11 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, arr3_double vector, int type);
+    void smooth(arr3_double vector, int type);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
     void smooth(double value, arr4_double vector, int is, int type);
     /*! smooth the electric field */
-    void smoothE(double value);
+    void smoothE();
 
     /*! copy the field data to the array used to move the particles */
     void set_fieldForPcls();
@@ -304,6 +304,7 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    int SmoothNiter;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */

@@ -171,7 +171,7 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() && (col->getWriteMethod() == "shdf5"||col->getCallFinalize()))
+  if ( Parameters::get_doWriteOutput() && (col->getWriteMethod() == "shdf5"||col->getCallFinalize()||restart_cycle>0))
   {
     #ifndef NO_HDF5
 	  outputWrapperFPP = new OutputWrapperFPP;
@@ -366,6 +366,7 @@ bool c_Solver::ParticlesMover()
 void c_Solver::WriteOutput(int cycle) {
 
   WriteConserved(cycle);
+  WriteRestart(cycle);
 
   if(!Parameters::get_doWriteOutput())  return;
 
@@ -402,7 +403,6 @@ void c_Solver::WriteOutput(int cycle) {
 			  }
 
 			}else if (col->getWriteMethod() == "shdf5"){
-					WriteRestart(cycle);
 
 					WriteFields(cycle);
 

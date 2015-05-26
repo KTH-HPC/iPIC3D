@@ -24,6 +24,8 @@ void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double vector, int
 
 void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
 
+void communicateNodeBC_P(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
+
 
 
 

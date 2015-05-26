@@ -12,7 +12,9 @@
 #include "InterfaceFluid.h"
 #endif
 #include <string>
-
+#include "VCtopology3D.h"
+#include "Grid3DCU.h"
+#include "aligned_vector.h"
 //#include "CollectiveIO.h"
 class ConfigFile;
 using namespace std;
@@ -46,6 +48,13 @@ class Collective
     void ReadInput(string inputfile);
     /*! read the restart input file from HDF5 */
     int ReadRestart(string inputfile);
+
+    void read_field_restart(const VCtopology3D* vct,const Grid* grid,arr3_double Bxn, arr3_double Byn, arr3_double Bzn,
+    						arr3_double Ex, arr3_double Ey, arr3_double Ez,array4_double* rhons_, int ns)const;
+
+    void read_particles_restart(const VCtopology3D* vct,int species_number,vector_double& u,vector_double& v,vector_double& w,
+    							vector_double& q,vector_double& x,vector_double& y,vector_double& z,vector_double& t)const;
+
     void init_derived_parameters();
     /*! Print physical parameters */
     void Print();
@@ -82,6 +91,7 @@ class Collective
     double getImplSusceptTime()const{ return ImplSusceptTime; }
     int getImplSusceptMode()const{ return ImplSusceptMode; }
     double getSmooth()const{ return (Smooth); }
+    int    getSmoothNiter()const{return SmoothNiter;}
     int getNcycles()const{ return (ncycles); }
     int getNs()const{ return (ns); }
     int getNsTestPart()const{ return (nstestpart); }
@@ -187,6 +197,7 @@ class Collective
     //
     /*! Smoothing value */
     double Smooth;
+    int SmoothNiter;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */

@@ -14,13 +14,12 @@
 #include "Parameters.h"
 #include "ompdefs.h"
 #include "debug.h"
-#include "string.h" // for memset
+#include "string.h"
 #include "mic_particles.h"
 #include "ipicmath.h" // for roundup_to_multiple
 #include "Alloc.h"
 #include "asserts.h"
 #ifndef NO_HDF5
-#include "Restart3D.h"
 #endif
 
 #include <iostream>
@@ -199,6 +198,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
   B0z = col->getB0z();
   delta = col->getDelta();
   Smooth = col->getSmooth();
+  SmoothNiter = col->getSmoothNiter();
   // get the density background for the gem Challange
   rhoINIT = new double[ns];
   DriftSpecies = new bool[ns];
@@ -2120,9 +2120,7 @@ void EMfields3D::calculateE()
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
   // apply to smooth to electric field 3 times
-  smoothE(Smooth);
-  smoothE(Smooth);
-  smoothE(Smooth);
+  smoothE();
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct, this);
@@ -2427,80 +2425,100 @@ void EMfields3D::MUdot(arr3_double MUdotX, arr3_double MUdotY, arr3_double MUdot
   }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, arr3_double vector, int type)
+void EMfields3D::smooth(arr3_double vector, int type)
 {
+  if(Smooth==1.0) return;
   const VirtualTopology3D *vct = &get_vct();
   const Grid *grid = &get_grid();
 
-  int nvolte = 6;
-  for (int icount = 1; icount < nvolte + 1; icount++) {
-
-    if (value != 1.0) {
-      double alpha;
-      int nx, ny, nz;
+  double alpha   = Smooth;
+  double beta3D  = (1-alpha)/6.0;
+  double beta2D  = (1-alpha)/4.0;
+  int nx, ny, nz;
+  switch (type) {
+  	  case (0):
+			   nx = grid->getNXC();
+			   ny = grid->getNYC();
+			   nz = grid->getNZC();
+			   break;
+  	  case (1):
+			   nx = grid->getNXN();
+			   ny = grid->getNYN();
+			   nz = grid->getNZN();
+			   break;
+  }
+  double ***temp = newArr3(double, nx, ny, nz);
+  for (int icount = 1; icount < SmoothNiter + 1; icount++) {
       switch (type) {
         case (0):
-          nx = grid->getNXC();
-          ny = grid->getNYC();
-          nz = grid->getNZC();
           communicateCenterBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct, this);
-
           break;
         case (1):
-          nx = grid->getNXN();
-          ny = grid->getNYN();
-          nz = grid->getNZN();
           communicateNodeBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct, this);
           break;
       }
-      double ***temp = newArr3(double, nx, ny, nz);
+
+      /*
       if (icount % 2 == 1) {
-        value = 0.;
+    	  alpha = 0.;
       }
       else {
-        value = 0.5;
+    	  alpha = 0.5;
       }
-      alpha = (1.0 - value) / 6;
+      beta3D = (1.0 - alpha) / 6;
+      */
+
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
           for (int k = 1; k < nz - 1; k++)
-            temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+            temp[i][j][k] = alpha * vector[i][j][k] + beta3D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+      	    //temp[i][j][k] = alpha * vector[i][j][k] + beta2D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
           for (int k = 1; k < nz - 1; k++)
             vector[i][j][k] = temp[i][j][k];
-      delArr3(temp, nx, ny);
-    }
+
   }
+  delArr3(temp, nx, ny);
 }
+
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells)
  * TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smoothE(double value)
+void EMfields3D::smoothE()
 {
+  if(Smooth==1.0) return;
   const Collective *col = &get_col();
   const VirtualTopology3D *vct = &get_vct();
 
-  int nvolte = 6;
-  for (int icount = 1; icount < nvolte + 1; icount++) {
-    if (value != 1.0) {
-      double alpha;
+  double alpha   = Smooth;
+  double beta3D  = (1-alpha)/6.0;
+  double beta2D  = (1-alpha)/4.0;
+
+  double ***temp = newArr3(double, nxn, nyn, nzn);
+
+  for (int icount = 1; icount < SmoothNiter + 1; icount++) {
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct, this);
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct, this);
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct, this);
 
-      double ***temp = newArr3(double, nxn, nyn, nzn);
+      /*
       if (icount % 2 == 1) {
-        value = 0.;
+    	  alpha = 0.;
       }
       else {
-        value = 0.5;
+    	  alpha = 0.5;
       }
-      alpha = (1.0 - value) / 6;
+      beta = (1.0 - alpha) / 6;
+      */
+
       // Exth
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ex[i][j][k] + beta3D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+      	  	//temp[i][j][k] = alpha * Ex[i][j][k] + beta2D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
@@ -2509,7 +2527,9 @@ void EMfields3D::smoothE(double value)
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ey[i][j][k] + beta3D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+      	    //temp[i][j][k] = alpha * Ey[i][j][k] + beta2D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
@@ -2518,16 +2538,16 @@ void EMfields3D::smoothE(double value)
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ez[i][j][k] + beta3D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+      	  //temp[i][j][k] = alpha * Ez[i][j][k] + beta2D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
             Ez[i][j][k] = temp[i][j][k];
 
-
-      delArr3(temp, nxn, nyn);
-    }
   }
+  delArr3(temp, nxn, nyn);
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
@@ -2716,8 +2736,7 @@ void EMfields3D::ConstantChargeOpenBCv2()
 
   for (int is = 0; is < ns; is++) {
 
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+	ff = qom[is]/fabs(qom[is]);
 
     if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
       for (int j=0; j < ny;j++)
@@ -2796,8 +2815,7 @@ void EMfields3D::ConstantChargeOpenBC()
 
   for (int is = 0; is < ns; is++) {
 
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+    ff = qom[is]/fabs(qom[is]);
 
     if(vct->getXleft_neighbor()==MPI_PROC_NULL && (bcEMfaceXleft ==2)) {
       for (int j=0; j < ny;j++)
@@ -2874,8 +2892,9 @@ void EMfields3D::ConstantChargePlanet(double R,
   double ff;
 
   for (int is = 0; is < ns; is++) {
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+
+	ff = qom[is]/fabs(qom[is]);
+
     for (int i = 1; i < nxn; i++) {
       for (int j = 1; j < nyn; j++) {
         for (int k = 1; k < nzn; k++) {
@@ -3039,7 +3058,7 @@ void EMfields3D::calculateHatFunctions()
   const VirtualTopology3D *vct = &get_vct();
   const Grid *grid = &get_grid();
   // smoothing
-  smooth(Smooth, rhoc, 0);
+  smooth(rhoc, 0);
   // calculate j hat
 
   for (int is = 0; is < ns; is++) {
@@ -3064,9 +3083,9 @@ void EMfields3D::calculateHatFunctions()
 
   }
   // smooth j
-  smooth(Smooth, Jxh, 1);
-  smooth(Smooth, Jyh, 1);
-  smooth(Smooth, Jzh, 1);
+  smooth(Jxh, 1);
+  smooth(Jyh, 1);
+  smooth(Jzh, 1);
 
   // calculate rho hat = rho - (dt*theta)div(jhat)
   grid->divN2C(tempXC, Jxh, Jyh, Jzh);
@@ -3277,7 +3296,7 @@ void EMfields3D::init()
   #ifdef NO_HDF5
     eprintf("restart requires compiling with HDF5");
   #else
-    read_field_restart(&get_col(),vct,grid,Bxn,Byn,Bzn,Ex,Ey,Ez,&rhons,ns);
+    col->read_field_restart(vct,grid,Bxn,Byn,Bzn,Ex,Ey,Ez,&rhons,ns);
 
     // communicate species densities to ghost nodes
     for (int is = 0; is < ns; is++) {
@@ -3300,10 +3319,12 @@ void EMfields3D::init()
     grid->interpN2C(Bxc, Bxn);
     grid->interpN2C(Byc, Byn);
     grid->interpN2C(Bzc, Bzn);
+
     // communicate ghost
     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct,this);
     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct,this);
     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct,this);
+
     // communicate E
     communicateNodeBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct, this);
     communicateNodeBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct, this);

@@ -14,7 +14,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "VCtopology3D.h"
 #include "CollectiveIO.h"
 #include "Collective.h"
-//#include "ComParticles3D.h"
 #include "Alloc.h"
 #include "Basic.h"
 #include "BcParticles.h"
@@ -33,7 +32,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Parameters.h"
 
 #include "ipichdf5.h"
-#include "Restart3D.h"
 //#include <vector>
 //#include <complex>
 #include "debug.h"
@@ -291,8 +289,7 @@ if( !isTestParticle ){
     int species_number = get_species_num();
     // prepare arrays to receive particles
     particleType = ParticleType::SoA;
-    read_particles_restart(col, vct, species_number,
-      u, v, w, q, x, y, z, t);
+    col->read_particles_restart(vct, species_number,u, v, w, q, x, y, z, t);
     convertParticlesToAoS();
   #endif
   }
