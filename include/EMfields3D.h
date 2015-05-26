@@ -63,6 +63,7 @@ class EMfields3D                // :public Field
     void MaxwellSource(double *bkrylov);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(double R, double x_center, double y_center, double z_center);
+    void ConstantChargePlanet2DPlaneXZ(double R, double x_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
     void ConstantChargeOpenBC();
     /*! Impose a constant charge in the OpenBC boundaries */

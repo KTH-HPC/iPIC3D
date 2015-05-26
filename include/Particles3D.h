@@ -87,6 +87,7 @@ class Particles3D:public Particles3Dcomm {
     void repopulate_particles();
     /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
     double deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center);
+    double deleteParticlesInsideSphere2DPlaneXZ(double R, double x_center, double z_center);
     /**Particles Open Boundary */
     void openbc_particles_outflow();
     void openbc_particles_inflow();

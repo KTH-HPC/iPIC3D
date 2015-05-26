@@ -254,6 +254,8 @@ void c_Solver::CalculateMoments() {
   // Fill with constant charge the planet
   if (col->getCase()=="Dipole") {
     EMf->ConstantChargePlanet(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }else if(col->getCase()=="Dipole2D") {
+	EMf->ConstantChargePlanet2DPlaneXZ(col->getL_square(),col->getx_center(),col->getz_center());
   }
   // Set a constant charge in the OpenBC boundaries
   //EMf->ConstantChargeOpenBC();
@@ -347,6 +349,9 @@ bool c_Solver::ParticlesMover()
   if (col->getCase()=="Dipole") {
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }else if (col->getCase()=="Dipole2D") {
+	for (int i=0; i < ns; i++)
+	  Qremoved[i] = part[i].deleteParticlesInsideSphere2DPlaneXZ(col->getL_square(),col->getx_center(),col->getz_center());
   }
 
 

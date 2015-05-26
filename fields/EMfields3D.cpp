@@ -2914,6 +2914,34 @@ void EMfields3D::ConstantChargePlanet(double R,
 
 }
 
+void EMfields3D::ConstantChargePlanet2DPlaneXZ(double R,  double x_center,double z_center)
+{
+  const Grid *grid = &get_grid();
+  //if (get_vct().getCartesian_rank() == 0)
+      //cout << "*** Constant Charge 2D Planet ***" << endl;
+
+  assert_eq(nyn,4);
+  double xd;
+  double zd;
+
+  for (int is = 0; is < ns; is++) {
+    const double sign_q = qom[is]/(fabs(qom[is]));
+    for (int i = 1; i < nxn; i++)
+        for (int k = 1; k < nzn; k++) {
+
+          xd = grid->getXN(i,1,k) - x_center;
+          zd = grid->getZN(i,1,k) - z_center;
+
+          if ((xd*xd+zd*zd) <= R*R) {
+            rhons[is][i][1][k] = sign_q * rhoINIT[is] / FourPI;
+            rhons[is][i][2][k] = sign_q * rhoINIT[is] / FourPI;
+          }
+
+	}
+  }
+
+}
+
 /*! Populate the field data used to push particles */
 // 
 // 
@@ -3306,7 +3334,9 @@ void EMfields3D::init()
 
     if (col->getCase()=="Dipole") {
       ConstantChargePlanet(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-    }
+    }else if(col->getCase()=="Dipole2D") {
+    	ConstantChargePlanet2DPlaneXZ(col->getL_square(),col->getx_center(),col->getz_center());
+      }
 
     ConstantChargeOpenBC();
 

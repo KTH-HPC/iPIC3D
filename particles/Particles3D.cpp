@@ -2163,3 +2163,22 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
   return(Q_removed);
 }
 
+double Particles3D::deleteParticlesInsideSphere2DPlaneXZ(double R, double x_center, double z_center)
+{
+  int pidx = 0;
+  double Q_removed=0.;
+  while (pidx < _pcls.size())
+  {
+    SpeciesParticle& pcl = _pcls[pidx];
+    double xd = pcl.get_x() - x_center;
+    double zd = pcl.get_z() - z_center;
+
+    if ( (xd*xd+zd*zd) < R*R ){
+      Q_removed += pcl.get_q();
+      delete_particle(pidx);
+    } else {
+      pidx++;
+    }
+  }
+  return(Q_removed);
+}
