@@ -2056,7 +2056,7 @@ void EMfields3D::calculateE()
   const VirtualTopology3D * vct = &get_vct();
   const Grid *grid = &get_grid();
 
-  if (get_vct().getCartesian_rank() == 0)
+  if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
 
   array3_double divE     (nxc, nyc, nzc);
@@ -2080,7 +2080,7 @@ void EMfields3D::calculateE()
   eqValue(0.0, gradPHIZ, nxn, nyn, nzn);
   // Adjust E calculating laplacian(PHI) = div(E) -4*PI*rho DIVERGENCE CLEANING
   if (PoissonCorrection) {
-    if (get_vct().getCartesian_rank() == 0)
+    if (vct->getCartesian_rank() == 0)
       cout << "*** DIVERGENCE CLEANING ***" << endl;
     grid->divN2C(divE, Ex, Ey, Ez);
     scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
@@ -2089,7 +2089,7 @@ void EMfields3D::calculateE()
     phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
     // use conjugate gradient first
     if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, this)) {
-      if (get_vct().getCartesian_rank() == 0)
+      if (vct->getCartesian_rank() == 0)
         cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
       eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
       GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, this);
@@ -2104,7 +2104,7 @@ void EMfields3D::calculateE()
     sub(Ez, gradPHIZ, nxn, nyn, nzn);
 
   }                             // end of divergence cleaning 
-  if (get_vct().getCartesian_rank() == 0)
+  if (vct->getCartesian_rank() == 0)
     cout << "*** MAXWELL SOLVER ***" << endl;
   // prepare the source 
   MaxwellSource(bkrylov);
@@ -2471,8 +2471,8 @@ void EMfields3D::smooth(arr3_double vector, int type)
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
           for (int k = 1; k < nz - 1; k++)
-            temp[i][j][k] = alpha * vector[i][j][k] + beta3D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
-      	    //temp[i][j][k] = alpha * vector[i][j][k] + beta2D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+            //temp[i][j][k] = alpha * vector[i][j][k] + beta3D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+      	    temp[i][j][k] = alpha * vector[i][j][k] + beta2D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
 
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
@@ -2516,8 +2516,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = alpha * Ex[i][j][k] + beta3D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
-      	  	//temp[i][j][k] = alpha * Ex[i][j][k] + beta2D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+            //temp[i][j][k] = alpha * Ex[i][j][k] + beta3D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+      	    temp[i][j][k] = alpha * Ex[i][j][k] + beta2D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -2527,8 +2527,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = alpha * Ey[i][j][k] + beta3D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
-      	    //temp[i][j][k] = alpha * Ey[i][j][k] + beta2D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+            //temp[i][j][k] = alpha * Ey[i][j][k] + beta3D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+      	    temp[i][j][k] = alpha * Ey[i][j][k] + beta2D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -2538,8 +2538,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = alpha * Ez[i][j][k] + beta3D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
-      	  //temp[i][j][k] = alpha * Ez[i][j][k] + beta2D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+            //temp[i][j][k] = alpha * Ez[i][j][k] + beta3D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+      	  temp[i][j][k] = alpha * Ez[i][j][k] + beta2D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -4206,6 +4206,8 @@ void EMfields3D::initDipole2D()
       cout << "Center dipole - Y                = " << y_center << endl;
       cout << "Center dipole - Z                = " << z_center << endl;
       cout << "Solar Wind drift velocity        = " << ue0 << endl;
+      cout << "2D Smoothing Factor              = " << Smooth << endl;
+      cout << "Smooth Iteration                 = " << SmoothNiter << endl;
   }
 
 
@@ -4668,7 +4670,7 @@ void EMfields3D::OpenBoundaryInflowEImage(arr3_double imageX, arr3_double imageY
         imageZ[0][j][k] = vectorZ[0][j][k] - injE[2];
       }
   }
-
+  /*
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright == 2) {
     for (int j=1; j < ny-1;j++)
       for (int k=1; k < nz-1;k++){
@@ -4715,7 +4717,7 @@ void EMfields3D::OpenBoundaryInflowEImage(arr3_double imageX, arr3_double imageY
         imageZ[i][j][nz-1] = vectorZ[i][j][nz-1]-injE[2];
       }
   }
-
+  */
 }
 
 void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
@@ -4726,26 +4728,92 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
-        vectorX[0][j][k] = B0x;
+          
+	vectorX[0][j][k] = B0x;
         vectorY[0][j][k] = B0y;
         vectorZ[0][j][k] = B0z;
 
-		vectorX[1][j][k] = B0x;
-		vectorY[1][j][k] = B0y;
-		vectorZ[1][j][k] = B0z;
+	vectorX[1][j][k] = B0x;
+	vectorY[1][j][k] = B0y;
+	vectorZ[1][j][k] = B0z;
+		
+	vectorX[2][j][k] = B0x;
+	vectorY[2][j][k] = B0y;
+	vectorZ[2][j][k] = B0z;
 
-		vectorX[2][j][k] = B0x;
-		vectorY[2][j][k] = B0y;
-		vectorZ[2][j][k] = B0z;
+	vectorX[3][j][k] = B0x;
+	vectorY[3][j][k] = B0y;
+	vectorZ[3][j][k] = B0z;
 
-		vectorX[3][j][k] = B0x;
-		vectorY[3][j][k] = B0y;
-		vectorZ[3][j][k] = B0z;
-
-		vectorX[4][j][k] = B0x;
-		vectorY[4][j][k] = B0y;
-		vectorZ[4][j][k] = B0z;
       }
+  }
+
+  if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
+    for (int j=0; j < ny;j++)
+      for (int k=0; k < nz;k++){
+
+        vectorX[nx-4][j][k] = vectorX[nx-5][j][k];
+        vectorY[nx-4][j][k] = 0.0;
+        vectorZ[nx-4][j][k] = vectorZ[nx-5][j][k];
+
+        vectorX[nx-3][j][k] = vectorX[nx-5][j][k];
+        vectorY[nx-3][j][k] = 0.0;
+	vectorZ[nx-3][j][k] = vectorZ[nx-5][j][k];
+
+	vectorX[nx-2][j][k] = vectorX[nx-5][j][k];
+        vectorY[nx-2][j][k] = 0.0;
+        vectorZ[nx-2][j][k] = vectorZ[nx-5][j][k];
+
+	vectorX[nx-1][j][k] = vectorX[nx-5][j][k];
+        vectorY[nx-1][j][k] = 0.0;
+        vectorZ[nx-1][j][k] = vectorZ[nx-5][j][k];
+      }
+  }
+
+  if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
+    for (int i=0; i < nx;i++)
+      for (int j=0; j < ny;j++){
+
+	vectorX[i][j][0] = vectorX[i][j][4];
+        vectorY[i][j][0] = 0.0;
+        vectorZ[i][j][0] = vectorZ[i][j][4];
+
+	vectorX[i][j][1] = vectorX[i][j][4];
+        vectorY[i][j][1] = 0.0;
+        vectorZ[i][j][1] = vectorZ[i][j][4];
+
+	vectorX[i][j][2] = vectorX[i][j][4];
+        vectorY[i][j][2] = 0.0;
+        vectorZ[i][j][2] = vectorZ[i][j][4];
+
+	vectorX[i][j][3] = vectorX[i][j][4];
+        vectorY[i][j][3] = 0.0;
+        vectorZ[i][j][3] = vectorZ[i][j][4];
+
+      } 
+  }
+
+  if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
+    for (int i=0; i < nx;i++)
+      for (int j=0; j < ny;j++){
+
+	vectorX[i][j][nz-4] = vectorX[i][j][nz-5];
+        vectorY[i][j][nz-4] = 0.0;
+        vectorZ[i][j][nz-4] = vectorZ[i][j][nz-5];
+
+	vectorX[i][j][nz-3] = vectorX[i][j][nz-5];
+        vectorY[i][j][nz-3] = 0.0;
+        vectorZ[i][j][nz-3] = vectorZ[i][j][nz-5];
+
+	vectorX[i][j][nz-2] = vectorX[i][j][nz-5];
+        vectorY[i][j][nz-2] = 0.0;
+        vectorZ[i][j][nz-2] = vectorZ[i][j][nz-5];
+
+	vectorX[i][j][nz-1] = vectorX[i][j][nz-5];
+        vectorY[i][j][nz-1] = 0.0;
+        vectorZ[i][j][nz-1] = vectorZ[i][j][nz-5];
+      }
+
   }
   /*
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
@@ -4828,16 +4896,26 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
+	//vectorX[0][j][k] = injE[0];
+	//vectorY[0][j][k] = injE[1];
+	//vectorZ[0][j][k] = injE[2];
+
         vectorX[1][j][k] = injE[0];
         vectorY[1][j][k] = injE[1];
         vectorZ[1][j][k] = injE[2];
 
-	//vectorX[0][j][k] = injE[0];
-	//vectorY[0][j][k] = injE[1];
-	//vectorZ[0][j][k] = injE[2];
+
+        vectorX[2][j][k] = injE[0];
+        vectorY[2][j][k] = injE[1];
+        vectorZ[2][j][k] = injE[2];
+
+
+        vectorX[3][j][k] = injE[0];
+        vectorY[3][j][k] = injE[1];
+        vectorZ[3][j][k] = injE[2];
       } 
   }
-
+  /*
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
@@ -4901,7 +4979,7 @@ void EMfields3D::OpenBoundaryInflowE(arr3_double vectorX, arr3_double vectorY, a
         vectorY[i][j][nz-1] = injE[1];
         vectorZ[i][j][nz-1] = injE[2];
       }
-  }
+   }*/
 }
 
 /*! get Electric Field component X array cell without the ghost cells */
