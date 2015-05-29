@@ -1552,14 +1552,14 @@ void Particles3D::repopulate_particles()
   using namespace BCparticles;
 
   // if this is not a boundary process then there is nothing to do
-  if(!vct->isBoundaryProcess()) return;
+  if(!vct->isBoundaryProcess_P()) return;
 
   // if there are no reemission boundaries then no one has anything to do
-  const bool repop_bndry_in_X = !vct->getPERIODICX() &&
+  const bool repop_bndry_in_X = !vct->getPERIODICX_P() &&
         (bcPfaceXleft == REEMISSION || bcPfaceXright == REEMISSION);
-  const bool repop_bndry_in_Y = !vct->getPERIODICY() &&
+  const bool repop_bndry_in_Y = !vct->getPERIODICY_P() &&
         (bcPfaceYleft == REEMISSION || bcPfaceYright == REEMISSION);
-  const bool repop_bndry_in_Z = !vct->getPERIODICZ() &&
+  const bool repop_bndry_in_Z = !vct->getPERIODICZ_P() &&
         (bcPfaceZleft == REEMISSION || bcPfaceZright == REEMISSION);
   const bool repopulation_boundary_exists =
         repop_bndry_in_X || repop_bndry_in_Y || repop_bndry_in_Z;
@@ -1569,12 +1569,12 @@ void Particles3D::repopulate_particles()
 
   // boundaries to repopulate
   //
-  const bool repopulateXleft = (vct->noXleftNeighbor() && bcPfaceXleft == REEMISSION);
-  const bool repopulateYleft = (vct->noYleftNeighbor() && bcPfaceYleft == REEMISSION);
-  const bool repopulateZleft = (vct->noZleftNeighbor() && bcPfaceZleft == REEMISSION);
-  const bool repopulateXrght = (vct->noXrghtNeighbor() && bcPfaceXright == REEMISSION);
-  const bool repopulateYrght = (vct->noYrghtNeighbor() && bcPfaceYright == REEMISSION);
-  const bool repopulateZrght = (vct->noZrghtNeighbor() && bcPfaceZright == REEMISSION);
+  const bool repopulateXleft = (vct->noXleftNeighbor_P() && bcPfaceXleft == REEMISSION);
+  const bool repopulateYleft = (vct->noYleftNeighbor_P() && bcPfaceYleft == REEMISSION);
+  const bool repopulateZleft = (vct->noZleftNeighbor_P() && bcPfaceZleft == REEMISSION);
+  const bool repopulateXrght = (vct->noXrghtNeighbor_P() && bcPfaceXright == REEMISSION);
+  const bool repopulateYrght = (vct->noYrghtNeighbor_P() && bcPfaceYright == REEMISSION);
+  const bool repopulateZrght = (vct->noZrghtNeighbor_P() && bcPfaceZright == REEMISSION);
   const bool do_repopulate = 
        repopulateXleft || repopulateYleft || repopulateZleft
     || repopulateXrght || repopulateYrght || repopulateZrght;
@@ -1649,7 +1649,7 @@ void Particles3D::repopulate_particles()
     int zend = nzc-2;
     if (repopulateXleft)
     {
-      //cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
+      cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
   
       for (int i=1; i<= num_layers; i++)
       for (int j=ybeg; j<=yend; j++)
@@ -1663,7 +1663,7 @@ void Particles3D::repopulate_particles()
     }
     if (repopulateXrght)
     {      
-      //cout << "*** Repopulate Xright species " << ns << " ***" << endl;
+      cout << "*** Repopulate Xright species " << ns << " ***" << endl;
       for (int i=upXstart; i<=xend; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)
@@ -1869,18 +1869,18 @@ void Particles3D::openbc_particles_inflow()
 void Particles3D::openbc_particles_outflow()
 {
   // if this is not a boundary process then there is nothing to do
-  if(!vct->isBoundaryProcess()) return;
+  if(!vct->isBoundaryProcess_P()) return;
 
   //The below is OpenBC outflow for all other boundaries
   using namespace BCparticles;
 
-  const bool openXleft = !vct->getPERIODICX() && vct->noXleftNeighbor() &&  bcPfaceXleft == OPENBCOut;
-  const bool openYleft = !vct->getPERIODICY() && vct->noYleftNeighbor() &&  bcPfaceYleft == OPENBCOut;
-  const bool openZleft = !vct->getPERIODICZ() && vct->noZleftNeighbor() &&  bcPfaceZleft == OPENBCOut;
+  const bool openXleft = !vct->getPERIODICX_P() && vct->noXleftNeighbor_P() &&  bcPfaceXleft == OPENBCOut;
+  const bool openYleft = !vct->getPERIODICY_P() && vct->noYleftNeighbor_P() &&  bcPfaceYleft == OPENBCOut;
+  const bool openZleft = !vct->getPERIODICZ_P() && vct->noZleftNeighbor_P() &&  bcPfaceZleft == OPENBCOut;
 
-  const bool openXright = !vct->getPERIODICX() && vct->noXrghtNeighbor() && bcPfaceXright == OPENBCOut;
-  const bool openYright = !vct->getPERIODICY() && vct->noYrghtNeighbor() && bcPfaceYright == OPENBCOut;
-  const bool openZright = !vct->getPERIODICZ() && vct->noZrghtNeighbor() && bcPfaceZright == OPENBCOut;
+  const bool openXright = !vct->getPERIODICX_P() && vct->noXrghtNeighbor_P() && bcPfaceXright == OPENBCOut;
+  const bool openYright = !vct->getPERIODICY_P() && vct->noYrghtNeighbor_P() && bcPfaceYright == OPENBCOut;
+  const bool openZright = !vct->getPERIODICZ_P() && vct->noZrghtNeighbor_P() && bcPfaceZright == OPENBCOut;
 
   if(!openXleft && !openYleft && !openZleft && !openXright && !openYright && !openZright)  return;
 
@@ -1908,7 +1908,7 @@ void Particles3D::openbc_particles_outflow()
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
     if(apply_openBC[dir_cnt]){
-    	  //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
+    	  dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
 
 		  int pidx = 0;
 		  int direction = dir_cnt/2;

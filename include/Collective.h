@@ -80,6 +80,9 @@ class Collective
     bool getPERIODICX()const{ return (PERIODICX); }
     bool getPERIODICY()const{ return (PERIODICY); }
     bool getPERIODICZ()const{ return (PERIODICZ); }
+    bool getPERIODICX_P()const{ return (PERIODICX_P); }
+    bool getPERIODICY_P()const{ return (PERIODICY_P); }
+    bool getPERIODICZ_P()const{ return (PERIODICZ_P); }
     double getDx()const{ return (dx); }
     double getDy()const{ return (dy); }
     double getDz()const{ return (dz); }
@@ -234,6 +237,11 @@ class Collective
     bool PERIODICX;
     bool PERIODICY;
     bool PERIODICZ;
+    /*! Particle periodicity in each direction */
+    bool PERIODICX_P;
+    bool PERIODICY_P;
+    bool PERIODICZ_P;
+
     /*! number of species */
     int ns;
     /*! number of test particle species */

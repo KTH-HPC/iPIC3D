@@ -196,6 +196,10 @@ void Collective::ReadInput(string inputfile) {
   PERIODICY = config.read < bool >("PERIODICY",true);
   PERIODICZ = config.read < bool >("PERIODICZ",true);
 
+  PERIODICX_P = config.read < bool >("PERIODICX_P",PERIODICX);
+  PERIODICY_P = config.read < bool >("PERIODICY_P",PERIODICY);
+  PERIODICZ_P = config.read < bool >("PERIODICZ_P",PERIODICZ);
+
   x_center = config.read < double >("x_center",5.0);
   y_center = config.read < double >("y_center",5.0);
   z_center = config.read < double >("z_center",5.0);

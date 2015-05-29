@@ -51,8 +51,11 @@ public:
   bool getPERIODICY()const{ return (PERIODICY); }
   bool getPERIODICZ()const{ return (PERIODICZ); }
 
-  // legacy names
-  //
+  bool getPERIODICX_P()const{ return (PERIODICX_P); }
+  bool getPERIODICY_P()const{ return (PERIODICY_P); }
+  bool getPERIODICZ_P()const{ return (PERIODICZ_P); }
+
+  //the below is for field communicator
   int getCartesian_rank()const{ return (cartesian_rank); }
   int getXleft_neighbor()const{ return (xleft_neighbor); }
   int getXright_neighbor()const{ return (xright_neighbor); }
@@ -60,57 +63,54 @@ public:
   int getYright_neighbor()const{ return (yright_neighbor); }
   int getZleft_neighbor()const{ return (zleft_neighbor); }
   int getZright_neighbor()const{ return (zright_neighbor); }
-  int getXleft_neighbor_P()const{ return (xleft_neighbor); }
-  int getXright_neighbor_P()const{ return (xright_neighbor); }
-  int getYleft_neighbor_P()const{ return (yleft_neighbor); }
-  int getYright_neighbor_P()const{ return (yright_neighbor); }
-  int getZleft_neighbor_P()const{ return (zleft_neighbor); }
-  int getZright_neighbor_P()const{ return (zright_neighbor); }
 
-  // new interface
-  //
-  int getXleft()const{ return (xleft_neighbor); }
-  int getXrght()const{ return (xright_neighbor); }
-  int getYleft()const{ return (yleft_neighbor); }
-  int getYrght()const{ return (yright_neighbor); }
-  int getZleft()const{ return (zleft_neighbor); }
-  int getZrght()const{ return (zright_neighbor); }
+//  bool hasXleftNeighbor()const{ return !_noXleftNeighbor; }
+//  bool hasXrghtNeighbor()const{ return !_noXrghtNeighbor; }
+//  bool hasYleftNeighbor()const{ return !_noYleftNeighbor; }
+//  bool hasYrghtNeighbor()const{ return !_noYrghtNeighbor; }
+//  bool hasZleftNeighbor()const{ return !_noZleftNeighbor; }
+//  bool hasZrghtNeighbor()const{ return !_noZrghtNeighbor; }
 
-  bool isPeriodicXlower()const{ return _isPeriodicXlower; }
-  bool isPeriodicXupper()const{ return _isPeriodicXupper; }
-  bool isPeriodicYlower()const{ return _isPeriodicYlower; }
-  bool isPeriodicYupper()const{ return _isPeriodicYupper; }
-  bool isPeriodicZlower()const{ return _isPeriodicZlower; }
-  bool isPeriodicZupper()const{ return _isPeriodicZupper; }
+  bool isXupper()const{ return (coordinates[0]==dims[0]-1); }
+  bool isYupper()const{ return (coordinates[1]==dims[1]-1); }
+  bool isZupper()const{ return (coordinates[2]==dims[2]-1); }
 
-  bool noXleftNeighbor()const{ return _noXleftNeighbor; }
-  bool noXrghtNeighbor()const{ return _noXrghtNeighbor; }
-  bool noYleftNeighbor()const{ return _noYleftNeighbor; }
-  bool noYrghtNeighbor()const{ return _noYrghtNeighbor; }
-  bool noZleftNeighbor()const{ return _noZleftNeighbor; }
-  bool noZrghtNeighbor()const{ return _noZrghtNeighbor; }
+  //the below only called by particle
+  int getXleft_neighbor_P()const{ return (xleft_neighbor_P); }
+  int getXright_neighbor_P()const{ return (xright_neighbor_P); }
+  int getYleft_neighbor_P()const{ return (yleft_neighbor_P); }
+  int getYright_neighbor_P()const{ return (yright_neighbor_P); }
+  int getZleft_neighbor_P()const{ return (zleft_neighbor_P); }
+  int getZright_neighbor_P()const{ return (zright_neighbor_P); }
 
-  bool hasXleftNeighbor()const{ return !_noXleftNeighbor; }
-  bool hasXrghtNeighbor()const{ return !_noXrghtNeighbor; }
-  bool hasYleftNeighbor()const{ return !_noYleftNeighbor; }
-  bool hasYrghtNeighbor()const{ return !_noYrghtNeighbor; }
-  bool hasZleftNeighbor()const{ return !_noZleftNeighbor; }
-  bool hasZrghtNeighbor()const{ return !_noZrghtNeighbor; }
+  bool isPeriodicXlower_P()const{ return _isPeriodicXlower_P; }
+  bool isPeriodicXupper_P()const{ return _isPeriodicXupper_P; }
+  bool isPeriodicYlower_P()const{ return _isPeriodicYlower_P; }
+  bool isPeriodicYupper_P()const{ return _isPeriodicYupper_P; }
+  bool isPeriodicZlower_P()const{ return _isPeriodicZlower_P; }
+  bool isPeriodicZupper_P()const{ return _isPeriodicZupper_P; }
 
-  bool isBoundaryProcess()const{ return _isBoundaryProcess; }
+  bool noXleftNeighbor_P()const{ return _noXleftNeighbor_P; }
+  bool noXrghtNeighbor_P()const{ return _noXrghtNeighbor_P; }
+  bool noYleftNeighbor_P()const{ return _noYleftNeighbor_P; }
+  bool noYrghtNeighbor_P()const{ return _noYrghtNeighbor_P; }
+  bool noZleftNeighbor_P()const{ return _noZleftNeighbor_P; }
+  bool noZrghtNeighbor_P()const{ return _noZrghtNeighbor_P; }
 
-  bool isXlower()const{ return coordinates[0]==0; }
-  bool isYlower()const{ return coordinates[1]==0; }
-  bool isZlower()const{ return coordinates[2]==0; }
-  bool isXupper()const{ return coordinates[0]==dims[0]-1; }
-  bool isYupper()const{ return coordinates[1]==dims[1]-1; }
-  bool isZupper()const{ return coordinates[2]==dims[2]-1; }
+  bool hasXleftNeighbor_P()const{ return !_noXleftNeighbor_P; }
+  bool hasXrghtNeighbor_P()const{ return !_noXrghtNeighbor_P; }
+  bool hasYleftNeighbor_P()const{ return !_noYleftNeighbor_P; }
+  bool hasYrghtNeighbor_P()const{ return !_noYrghtNeighbor_P; }
+  bool hasZleftNeighbor_P()const{ return !_noZleftNeighbor_P; }
+  bool hasZrghtNeighbor_P()const{ return !_noZrghtNeighbor_P; }
+
+  bool isBoundaryProcess_P()const{ return _isBoundaryProcess_P; }
+
 
   bool getcVERBOSE()const{ return (cVERBOSE); }
   int getCoordinates(int dir)const{ return (coordinates[dir]); }
   const int *getCoordinates()const{ return (coordinates); }
   const int *getDims()const{ return dims; }
-  //const int *getDivisions()const{ return getDims(); } // old name
   int getPeriods(int dir)const{ return (periods[dir]); }
   MPI_Comm getComm()const{ return (CART_COMM); }
 
@@ -144,10 +144,13 @@ private:
   int nprocs;
   /** periodicity on boundaries - DIRECTION X*/
   bool PERIODICX;
+  bool PERIODICX_P;
   /** periodicity on boundaries - DIRECTION Y*/
   bool PERIODICY;
+  bool PERIODICY_P;
   /** periodicity on boundaries - DIRECTION Z*/
   bool PERIODICZ;
+  bool PERIODICZ_P;
   /** periodicity on boundaries - DIRECTION X*/
   //bool PERIODICX_P;
   /** periodicity on boundaries - DIRECTION Y*/
@@ -167,38 +170,25 @@ private:
   int cartesian_rank;
   /** cartesian rank of XLEFT neighbor */
   int xleft_neighbor;
+  int xleft_neighbor_P;
   /** cartesian rank of XRIGHT neighbor */
   int xright_neighbor;
+  int xright_neighbor_P;
   /** cartesian rank of YLEFT neighbor */
   int yleft_neighbor;
+  int yleft_neighbor_P;
   /** cartesian rank of YRIGHT neighbor */
   int yright_neighbor;
+  int yright_neighbor_P;
   /** cartesian rank of ZRIGHT neighbor */
   int zleft_neighbor;
+  int zleft_neighbor_P;
   /** cartesian rank of ZLEFT neighbor */
   int zright_neighbor;
-  /** cartesian rank of XLEFT neighbor */
-  //int xleft_neighbor_P;
-  /** cartesian rank of XRIGHT neighbor */
-  //int xright_neighbor_P;
-  /** cartesian rank of YLEFT neighbor */
-  //int yleft_neighbor_P;
-  /** cartesian rank of YRIGHT neighbor */
-  //int yright_neighbor_P;
-  /** cartesian rank of ZRIGHT neighbor */
-  //int zleft_neighbor_P;
-  /** cartesian rank of ZLEFT neighbor */
-  //int zright_neighbor_P;
-  
-  /** indicators of whether this is a periodic boundary */
-  bool _isPeriodicXlower;
-  bool _isPeriodicXupper;
-  bool _isPeriodicYlower;
-  bool _isPeriodicYupper;
-  bool _isPeriodicZlower;
-  bool _isPeriodicZupper;
+  int zright_neighbor_P;
 
-  /** indicators of whether this lacks a neighbor */
+  
+  /**  for Field Communicator **/
   bool _noXrghtNeighbor;
   bool _noXleftNeighbor;
   bool _noYrghtNeighbor;
@@ -206,7 +196,22 @@ private:
   bool _noZrghtNeighbor;
   bool _noZleftNeighbor;
 
-  int _isBoundaryProcess;
+  /**  for Particle Communicator **/
+  bool _isPeriodicXlower_P;
+  bool _isPeriodicXupper_P;
+  bool _isPeriodicYlower_P;
+  bool _isPeriodicYupper_P;
+  bool _isPeriodicZlower_P;
+  bool _isPeriodicZupper_P;
+
+  bool _noXrghtNeighbor_P;
+  bool _noXleftNeighbor_P;
+  bool _noYrghtNeighbor_P;
+  bool _noYleftNeighbor_P;
+  bool _noZrghtNeighbor_P;
+  bool _noZleftNeighbor_P;
+
+  int _isBoundaryProcess_P;
 
   /** if cVERBOSE == true, print to the screen all the comunication */
   bool cVERBOSE;

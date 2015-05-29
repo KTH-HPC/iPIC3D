@@ -127,21 +127,21 @@ Particles3Dcomm::Particles3Dcomm(
   //
   // define connections
   using namespace Direction;
-  //
-  sendXleft.init(Connection::null2self(vct->getXleft(),XDN,XDN,mpi_comm));
-  sendXrght.init(Connection::null2self(vct->getXrght(),XUP,XUP,mpi_comm));
-  recvXleft.init(Connection::null2self(vct->getXleft(),XUP,XDN,mpi_comm));
-  recvXrght.init(Connection::null2self(vct->getXrght(),XDN,XUP,mpi_comm));
 
-  sendYleft.init(Connection::null2self(vct->getYleft(),YDN,YDN,mpi_comm));
-  sendYrght.init(Connection::null2self(vct->getYrght(),YUP,YUP,mpi_comm));
-  recvYleft.init(Connection::null2self(vct->getYleft(),YUP,YDN,mpi_comm));
-  recvYrght.init(Connection::null2self(vct->getYrght(),YDN,YUP,mpi_comm));
+  sendXleft.init(Connection::null2self(vct->getXleft_neighbor_P(),XDN,XDN,mpi_comm));
+  sendXrght.init(Connection::null2self(vct->getXright_neighbor_P(),XUP,XUP,mpi_comm));
+  recvXleft.init(Connection::null2self(vct->getXleft_neighbor_P(),XUP,XDN,mpi_comm));
+  recvXrght.init(Connection::null2self(vct->getXright_neighbor_P(),XDN,XUP,mpi_comm));
 
-  sendZleft.init(Connection::null2self(vct->getZleft(),ZDN,ZDN,mpi_comm));
-  sendZrght.init(Connection::null2self(vct->getZrght(),ZUP,ZUP,mpi_comm));
-  recvZleft.init(Connection::null2self(vct->getZleft(),ZUP,ZDN,mpi_comm));
-  recvZrght.init(Connection::null2self(vct->getZrght(),ZDN,ZUP,mpi_comm));
+  sendYleft.init(Connection::null2self(vct->getYleft_neighbor_P(),YDN,YDN,mpi_comm));
+  sendYrght.init(Connection::null2self(vct->getYright_neighbor_P(),YUP,YUP,mpi_comm));
+  recvYleft.init(Connection::null2self(vct->getYleft_neighbor_P(),YUP,YDN,mpi_comm));
+  recvYrght.init(Connection::null2self(vct->getYright_neighbor_P(),YDN,YUP,mpi_comm));
+
+  sendZleft.init(Connection::null2self(vct->getZleft_neighbor_P(),ZDN,ZDN,mpi_comm));
+  sendZrght.init(Connection::null2self(vct->getZright_neighbor_P(),ZUP,ZUP,mpi_comm));
+  recvZleft.init(Connection::null2self(vct->getZleft_neighbor_P(),ZUP,ZDN,mpi_comm));
+  recvZrght.init(Connection::null2self(vct->getZright_neighbor_P(),ZDN,ZUP,mpi_comm));
 
   recvXleft.post_recvs();
   recvXrght.post_recvs();
@@ -535,17 +535,17 @@ void Particles3Dcomm::apply_periodic_BC_global(
   for(int pidx=pstart;pidx<pcl_list.size();pidx++)
   {
     SpeciesParticle& pcl = pcl_list[pidx];
-    if(vct->getPERIODICX())
+    if(vct->getPERIODICX_P())
     {
       double& x = pcl.fetch_x();
       x = modulo(x, Lx, Lxinv);
     }
-    if(vct->getPERIODICY())
+    if(vct->getPERIODICY_P())
     {
       double& y = pcl.fetch_y();
       y = modulo(y, Ly, Lyinv);
     }
-    if(vct->getPERIODICZ())
+    if(vct->getPERIODICZ_P())
     {
       double& z = pcl.fetch_z();
       z = modulo(z, Lz, Lzinv);
@@ -619,15 +619,10 @@ inline bool Particles3Dcomm::test_outside_nonperiodic_domain(const SpeciesPartic
 {
   // This could be vectorized
   bool is_outside_nonperiodic_domain =
-     (!vct->getPERIODICX() && (pcl.get_x() < 0. || pcl.get_x() > Lx)) ||
-     (!vct->getPERIODICY() && (pcl.get_y() < 0. || pcl.get_y() > Ly)) ||
-     (!vct->getPERIODICZ() && (pcl.get_z() < 0. || pcl.get_z() > Lz));
+     (!vct->getPERIODICX_P() && (pcl.get_x() < 0. || pcl.get_x() > Lx)) ||
+     (!vct->getPERIODICY_P() && (pcl.get_y() < 0. || pcl.get_y() > Ly)) ||
+     (!vct->getPERIODICZ_P() && (pcl.get_z() < 0. || pcl.get_z() > Lz));
   return is_outside_nonperiodic_domain;
-  // bool is_in_nonperiodic_domain =
-  //    (vct->getPERIODICX() || (pcl.get_x() >= 0. && pcl.get_x() <= Lx)) &&
-  //    (vct->getPERIODICY() || (pcl.get_y() >= 0. && pcl.get_y() <= Ly)) &&
-  //    (vct->getPERIODICZ() || (pcl.get_z() >= 0. && pcl.get_z() <= Lz));
-  // return !is_in_nonperiodic_domain;
 }
 
 // apply user-supplied boundary conditions
@@ -637,7 +632,7 @@ void Particles3Dcomm::apply_nonperiodic_BCs_global(
 {
   int lstart;
   int lsize;
-  if(!vct->getPERIODICX())
+  if(!vct->getPERIODICX_P())
   {
     // separate out particles that need Xleft boundary conditions applied
     sort_pcls(pcl_list, pstart, lstart, test_Xleft_of_domain);
@@ -648,7 +643,7 @@ void Particles3Dcomm::apply_nonperiodic_BCs_global(
     // apply boundary conditions
     apply_Xrght_BC(pcl_list, lstart);
   }
-  if(!vct->getPERIODICY())
+  if(!vct->getPERIODICY_P())
   {
     // separate out particles that need Yleft boundary conditions applied
     sort_pcls(pcl_list, pstart, lstart, test_Yleft_of_domain);
@@ -659,7 +654,7 @@ void Particles3Dcomm::apply_nonperiodic_BCs_global(
     // apply boundary conditions
     apply_Yrght_BC(pcl_list, lstart);
   }
-  if(!vct->getPERIODICZ())
+  if(!vct->getPERIODICZ_P())
   {
     // separate out particles that need Zleft boundary conditions applied
     sort_pcls(pcl_list, pstart, lstart, test_Zleft_of_domain);
@@ -861,22 +856,22 @@ void Particles3Dcomm::apply_BCs_locally(vector_SpeciesParticle& pcl_list,
     {
       default:
         invalid_value_error(direction);
-      case XDN: assert(vct->noXleftNeighbor());
+      case XDN: assert(vct->noXleftNeighbor_P());
         apply_Xleft_BC(pcl_list);
         break;
-      case XUP: assert(vct->noXrghtNeighbor());
+      case XUP: assert(vct->noXrghtNeighbor_P());
         apply_Xrght_BC(pcl_list);
         break;
-      case YDN: assert(vct->noYleftNeighbor());
+      case YDN: assert(vct->noYleftNeighbor_P());
         apply_Yleft_BC(pcl_list);
         break;
-      case YUP: assert(vct->noYrghtNeighbor());
+      case YUP: assert(vct->noYrghtNeighbor_P());
         apply_Yrght_BC(pcl_list);
         break;
-      case ZDN: assert(vct->noZleftNeighbor());
+      case ZDN: assert(vct->noZleftNeighbor_P());
         apply_Zleft_BC(pcl_list);
         break;
-      case ZUP: assert(vct->noZrghtNeighbor());
+      case ZUP: assert(vct->noZrghtNeighbor_P());
         apply_Zrght_BC(pcl_list);
         break;
     }
@@ -951,15 +946,15 @@ int Particles3Dcomm::handle_received_particles(int pclCommMode)
   // determine the periodicity shift for each incoming buffer
   const bool apply_shift[num_recv_buffers] =
   {
-    vct->isPeriodicXlower(), vct->isPeriodicXupper(),
-    vct->isPeriodicYlower(), vct->isPeriodicYupper(),
-    vct->isPeriodicZlower(), vct->isPeriodicZupper()
+    vct->isPeriodicXlower_P(), vct->isPeriodicXupper_P(),
+    vct->isPeriodicYlower_P(), vct->isPeriodicYupper_P(),
+    vct->isPeriodicZlower_P(), vct->isPeriodicZupper_P()
   };
   const bool do_apply_BCs[num_recv_buffers] =
   {
-    vct->noXleftNeighbor(), vct->noXrghtNeighbor(),
-    vct->noYleftNeighbor(), vct->noYrghtNeighbor(),
-    vct->noZleftNeighbor(), vct->noZrghtNeighbor()
+    vct->noXleftNeighbor_P(), vct->noXrghtNeighbor_P(),
+    vct->noYleftNeighbor_P(), vct->noYrghtNeighbor_P(),
+    vct->noZleftNeighbor_P(), vct->noZrghtNeighbor_P()
   };
   const int direction[num_recv_buffers] =
   {

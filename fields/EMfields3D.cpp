@@ -4730,8 +4730,8 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
       for (int k=0; k < nz;k++){
           
 	vectorX[0][j][k] = B0x;
-        vectorY[0][j][k] = B0y;
-        vectorZ[0][j][k] = B0z;
+    vectorY[0][j][k] = B0y;
+    vectorZ[0][j][k] = B0z;
 
 	vectorX[1][j][k] = B0x;
 	vectorY[1][j][k] = B0y;
@@ -4758,13 +4758,13 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
 
         vectorX[nx-3][j][k] = vectorX[nx-5][j][k];
         vectorY[nx-3][j][k] = 0.0;
-	vectorZ[nx-3][j][k] = vectorZ[nx-5][j][k];
+        vectorZ[nx-3][j][k] = vectorZ[nx-5][j][k];
 
-	vectorX[nx-2][j][k] = vectorX[nx-5][j][k];
+        vectorX[nx-2][j][k] = vectorX[nx-5][j][k];
         vectorY[nx-2][j][k] = 0.0;
         vectorZ[nx-2][j][k] = vectorZ[nx-5][j][k];
 
-	vectorX[nx-1][j][k] = vectorX[nx-5][j][k];
+        vectorX[nx-1][j][k] = vectorX[nx-5][j][k];
         vectorY[nx-1][j][k] = 0.0;
         vectorZ[nx-1][j][k] = vectorZ[nx-5][j][k];
       }
@@ -4774,21 +4774,21 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
 
-	vectorX[i][j][0] = vectorX[i][j][4];
-        vectorY[i][j][0] = 0.0;
-        vectorZ[i][j][0] = vectorZ[i][j][4];
+    	  vectorX[i][j][0] = vectorX[i][j][4];
+    	  vectorY[i][j][0] = 0.0;
+    	  vectorZ[i][j][0] = vectorZ[i][j][4];
 
-	vectorX[i][j][1] = vectorX[i][j][4];
-        vectorY[i][j][1] = 0.0;
-        vectorZ[i][j][1] = vectorZ[i][j][4];
+    	  vectorX[i][j][1] = vectorX[i][j][4];
+    	  vectorY[i][j][1] = 0.0;
+    	  vectorZ[i][j][1] = vectorZ[i][j][4];
 
-	vectorX[i][j][2] = vectorX[i][j][4];
-        vectorY[i][j][2] = 0.0;
-        vectorZ[i][j][2] = vectorZ[i][j][4];
+    	  vectorX[i][j][2] = vectorX[i][j][4];
+    	  vectorY[i][j][2] = 0.0;
+    	  vectorZ[i][j][2] = vectorZ[i][j][4];
 
-	vectorX[i][j][3] = vectorX[i][j][4];
-        vectorY[i][j][3] = 0.0;
-        vectorZ[i][j][3] = vectorZ[i][j][4];
+    	  vectorX[i][j][3] = vectorX[i][j][4];
+    	  vectorY[i][j][3] = 0.0;
+    	  vectorZ[i][j][3] = vectorZ[i][j][4];
 
       } 
   }
@@ -4797,19 +4797,19 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
 
-	vectorX[i][j][nz-4] = vectorX[i][j][nz-5];
+    	  vectorX[i][j][nz-4] = vectorX[i][j][nz-5];
         vectorY[i][j][nz-4] = 0.0;
         vectorZ[i][j][nz-4] = vectorZ[i][j][nz-5];
 
-	vectorX[i][j][nz-3] = vectorX[i][j][nz-5];
+        vectorX[i][j][nz-3] = vectorX[i][j][nz-5];
         vectorY[i][j][nz-3] = 0.0;
         vectorZ[i][j][nz-3] = vectorZ[i][j][nz-5];
 
-	vectorX[i][j][nz-2] = vectorX[i][j][nz-5];
+        vectorX[i][j][nz-2] = vectorX[i][j][nz-5];
         vectorY[i][j][nz-2] = 0.0;
         vectorZ[i][j][nz-2] = vectorZ[i][j][nz-5];
 
-	vectorX[i][j][nz-1] = vectorX[i][j][nz-5];
+        vectorX[i][j][nz-1] = vectorX[i][j][nz-5];
         vectorY[i][j][nz-1] = 0.0;
         vectorZ[i][j][nz-1] = vectorZ[i][j][nz-5];
       }

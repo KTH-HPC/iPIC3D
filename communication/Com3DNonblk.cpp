@@ -11,7 +11,7 @@
 #include "EMfields3D.h"
 
 //isCenterFlag: 1 communicateCenter; 0 communicateNode
-void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct, EMfields3D *EMf,bool isCenterFlag, bool isFaceOnlyFlag, bool needInterp)
+void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct, EMfields3D *EMf,bool isCenterFlag, bool isFaceOnlyFlag, bool needInterp, bool isParticle)
 {
     //timeTasks_set_communicating();
 
@@ -23,12 +23,12 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 
     const int tag_XL=1,tag_YL=2,tag_ZL=3,tag_XR=4,tag_YR=5,tag_ZR=6;//To address same rank as left and right neighbour in periodic case
     const int myrank = vct->getCartesian_rank();
-    const int right_neighborX =vct->getXrght();
-    const int left_neighborX  =vct->getXleft();
-    const int right_neighborY =vct->getYrght();
-    const int left_neighborY  =vct->getYleft();
-    const int right_neighborZ =vct->getZrght();
-    const int left_neighborZ  =vct->getZleft();
+    const int right_neighborX = isParticle ?vct->getXright_neighbor_P() :vct->getXright_neighbor();
+    const int left_neighborX  = isParticle ?vct->getXleft_neighbor_P()  :vct->getXleft_neighbor();
+    const int right_neighborY = isParticle ?vct->getYright_neighbor_P() :vct->getYright_neighbor();
+    const int left_neighborY  = isParticle ?vct->getYleft_neighbor_P()  :vct->getYleft_neighbor();
+    const int right_neighborZ = isParticle ?vct->getZright_neighbor_P() :vct->getZright_neighbor();
+    const int left_neighborZ  = isParticle ?vct->getZleft_neighbor_P()  :vct->getZleft_neighbor();
     bool isCenterDim = (isCenterFlag&&!needInterp);//This is to address moment interp use nodes dimension but exchange center face
     const MPI_Datatype yzFacetype = EMf->getYZFacetype(isCenterDim);
     const MPI_Datatype xzFacetype = EMf->getXZFacetype(isCenterDim);
@@ -491,7 +491,7 @@ void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector,
   const VirtualTopology3D * vct, EMfields3D *EMf)
 {
 	double ***vector=_vector.fetch_arr3();
-	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false);
+	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false,false);
 
 	  // ////////////////////////////////////////////////////////////////////////
 	  // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -508,7 +508,7 @@ void communicateNodeBoxStencilBC( int nx, int ny, int nz, arr3_double _vector,
 
   double ***vector=_vector.fetch_arr3();
 
-  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,true,false);
+  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,true,false,false);
 
   // ////////////////////////////////////////////////////////////////////////
   // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -526,7 +526,7 @@ void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector,
 
   double ***vector=_vector.fetch_arr3();
 
-  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,true,false);
+  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,true,false,true);
 
   // ////////////////////////////////////////////////////////////////////////
   // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -542,7 +542,7 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector,
   const VirtualTopology3D * vct, EMfields3D *EMf)
 {
 	double ***vector=_vector.fetch_arr3();
-	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false);
+	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false,true);
 
 	  // ////////////////////////////////////////////////////////////////////////
 	  // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -553,7 +553,7 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector,
 void communicateNode_P(int nx, int ny, int nz, double*** vector,
   const VirtualTopology3D * vct, EMfields3D *EMf)
 {
-	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false);
+	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, false,false,false,true);
 }
 
 
@@ -564,7 +564,7 @@ void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector,
                                       const VirtualTopology3D * vct, EMfields3D *EMf)
 {
 	double ***vector=_vector.fetch_arr3();
-	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true, false,false);
+	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true, false,false,false);
 
     // ////////////////////////////////////////////////////////////////////////
     // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -581,7 +581,7 @@ void communicateCenterBC_P(   int nx, int ny, int nz, arr3_double _vector,
 {
 
   double ***vector=_vector.fetch_arr3();
-  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true, false,false);
+  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true, false,false,true);
 
   // ////////////////////////////////////////////////////////////////////////
   // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -596,7 +596,7 @@ void communicateCenterBoxStencilBC(   int nx, int ny, int nz, arr3_double _vecto
 									  const VirtualTopology3D * vct, EMfields3D *EMf)
 {
   double ***vector=_vector.fetch_arr3();
-  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,true,false);
+  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,true,false,false);
 
   // ////////////////////////////////////////////////////////////////////////
   // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -613,7 +613,7 @@ void communicateCenterBoxStencilBC_P( int nx, int ny, int nz, arr3_double _vecto
 {
 
   double ***vector=_vector.fetch_arr3();
-  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,true,false);
+  NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,true,false,true);
 
   // ////////////////////////////////////////////////////////////////////////
   // ///////////////// APPLY the boundary conditions ////////////////////////
@@ -630,14 +630,14 @@ void addFace(int nx, int ny, int nz, double ***vector, const VirtualTopology3D *
   const int nzr = nz-2;
 
   // Xright
-  if (vct->hasXrghtNeighbor())
+  if (vct->hasXrghtNeighbor_P())
   {
     for (int j = 1; j <= nyr; j++)
     	for (int k = 1; k <= nzr; k++)
     		vector[nx - 2][j][k] += vector[nx - 1][j][k];
   }
   // XLEFT
-  if (vct->hasXleftNeighbor())
+  if (vct->hasXleftNeighbor_P())
   {
     for (int j = 1; j <= nyr; j++)
 		for (int k = 1; k <= nzr; k++)
@@ -645,28 +645,28 @@ void addFace(int nx, int ny, int nz, double ***vector, const VirtualTopology3D *
   }
 
   // Yright
-  if (vct->hasYrghtNeighbor())
+  if (vct->hasYrghtNeighbor_P())
   {
     for (int i = 1; i <= nxr; i++)
 		for (int k = 1; k <= nzr; k++)
 			 vector[i][ny - 2][k] += vector[i][ny - 1][k];
   }
   // Yleft
-  if (vct->hasYleftNeighbor())
+  if (vct->hasYleftNeighbor_P())
   {
     for (int i = 1; i <= nxr; i++)
     	for (int k = 1; k <= nzr; k++)
     		vector[i][1][k] += vector[i][0][k];
   }
   // Zright
-  if (vct->hasZrghtNeighbor())
+  if (vct->hasZrghtNeighbor_P())
   {
     for (int i = 1; i <= nxr; i++)
 		for (int j = 1; j <= nyr; j++)
 			vector[i][j][nz - 2] += vector[i][j][nz - 1];
   }
   // ZLEFT
-  if (vct->hasZleftNeighbor())
+  if (vct->hasZleftNeighbor_P())
   {
     for (int i = 1; i <= nxr; i++)
 		for (int j = 1; j <= nyr; j++)
@@ -676,19 +676,19 @@ void addFace(int nx, int ny, int nz, double ***vector, const VirtualTopology3D *
 /** insert the ghost cells Edge Z in the 3D physical vector */
 void addEdgeZ(int nx, int ny, int nz, double ***vector, const VirtualTopology3D * vct)
 {
-  if (vct->hasXrghtNeighbor() && vct->hasYrghtNeighbor()) {
+  if (vct->hasXrghtNeighbor_P() && vct->hasYrghtNeighbor_P()) {
     for (int i = 1; i < (nz - 1); i++)
       vector[nx - 2][ny - 2][i] += vector[nx - 1][ny - 1][i];
   }
-  if (vct->hasXleftNeighbor() && vct->hasYleftNeighbor()) {
+  if (vct->hasXleftNeighbor_P() && vct->hasYleftNeighbor_P()) {
     for (int i = 1; i < (nz - 1); i++)
       vector[1][1][i] += vector[0][0][i];
   }
-  if (vct->hasXrghtNeighbor() && vct->hasYleftNeighbor()) {
+  if (vct->hasXrghtNeighbor_P() && vct->hasYleftNeighbor_P()) {
     for (int i = 1; i < (nz - 1); i++)
       vector[nx - 2][1][i] += vector[nx - 1][0][i];
   }
-  if (vct->hasXleftNeighbor() && vct->hasYrghtNeighbor()) {
+  if (vct->hasXleftNeighbor_P() && vct->hasYrghtNeighbor_P()) {
     for (int i = 1; i < (nz - 1); i++)
       vector[1][ny - 2][i] += vector[0][ny - 1][i];
   }
@@ -696,19 +696,19 @@ void addEdgeZ(int nx, int ny, int nz, double ***vector, const VirtualTopology3D 
 /** add the ghost cell values Edge Y to the 3D physical vector */
 void addEdgeY(int nx, int ny, int nz, double ***vector, const VirtualTopology3D * vct)
 {
-  if (vct->hasXrghtNeighbor() && vct->hasZrghtNeighbor()) {
+  if (vct->hasXrghtNeighbor_P() && vct->hasZrghtNeighbor_P()) {
     for (int i = 1; i < (ny - 1); i++)
       vector[nx - 2][i][nz - 2] += vector[nx - 1][i][nz - 1];
   }
-  if (vct->hasXleftNeighbor() && vct->hasZleftNeighbor()) {
+  if (vct->hasXleftNeighbor_P() && vct->hasZleftNeighbor_P()) {
     for (int i = 1; i < (ny - 1); i++)
       vector[1][i][1] += vector[0][i][0];
   }
-  if (vct->hasXleftNeighbor() && vct->hasZrghtNeighbor()) {
+  if (vct->hasXleftNeighbor_P() && vct->hasZrghtNeighbor_P()) {
     for (int i = 1; i < (ny - 1); i++)
       vector[1][i][nz - 2] += vector[0][i][nz - 1];
   }
-  if (vct->hasXrghtNeighbor() && vct->hasZleftNeighbor()) {
+  if (vct->hasXrghtNeighbor_P() && vct->hasZleftNeighbor_P()) {
     for (int i = 1; i < (ny - 1); i++)
       vector[nx - 2][i][1] += vector[nx - 1][i][0];
   }
@@ -716,19 +716,19 @@ void addEdgeY(int nx, int ny, int nz, double ***vector, const VirtualTopology3D 
 /** add the ghost values Edge X to the 3D physical vector */
 void addEdgeX(int nx, int ny, int nz, double ***vector, const VirtualTopology3D * vct)
 {
-  if (vct->hasYrghtNeighbor() && vct->hasZrghtNeighbor()) {
+  if (vct->hasYrghtNeighbor_P() && vct->hasZrghtNeighbor_P()) {
     for (int i = 1; i < (nx - 1); i++)
       vector[i][ny - 2][nz - 2] += vector[i][ny - 1][nz - 1];
   }
-  if (vct->hasYleftNeighbor() && vct->hasZleftNeighbor()) {
+  if (vct->hasYleftNeighbor_P() && vct->hasZleftNeighbor_P()) {
     for (int i = 1; i < (nx - 1); i++)
       vector[i][1][1] += vector[i][0][0];
   }
-  if (vct->hasYleftNeighbor() && vct->hasZrghtNeighbor()) {
+  if (vct->hasYleftNeighbor_P() && vct->hasZrghtNeighbor_P()) {
     for (int i = 1; i < (nx - 1); i++)
       vector[i][1][nz - 2] += vector[i][0][nz - 1];
   }
-  if (vct->hasYrghtNeighbor() && vct->hasZleftNeighbor()) {
+  if (vct->hasYrghtNeighbor_P() && vct->hasZleftNeighbor_P()) {
     for (int i = 1; i < (nx - 1); i++)
       vector[i][ny - 2][1] += vector[i][ny - 1][0];
   }
@@ -736,26 +736,26 @@ void addEdgeX(int nx, int ny, int nz, double ***vector, const VirtualTopology3D 
 /** add ghost cells values Corners in the 3D physical vector */
 void addCorner(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct)
 {
-  if (vct->hasXrghtNeighbor() && vct->hasYrghtNeighbor() && vct->hasZrghtNeighbor())
+  if (vct->hasXrghtNeighbor_P() && vct->hasYrghtNeighbor_P() && vct->hasZrghtNeighbor_P())
     vector[nx - 2][ny - 2][nz - 2] += vector[nx - 1][ny - 1][nz - 1];
-  if (vct->hasXleftNeighbor() && vct->hasYrghtNeighbor() && vct->hasZrghtNeighbor())
+  if (vct->hasXleftNeighbor_P() && vct->hasYrghtNeighbor_P() && vct->hasZrghtNeighbor_P())
     vector[1][ny - 2][nz - 2] += vector[0][ny - 1][nz - 1];
-  if (vct->hasXrghtNeighbor() && vct->hasYleftNeighbor() && vct->hasZrghtNeighbor())
+  if (vct->hasXrghtNeighbor_P() && vct->hasYleftNeighbor_P() && vct->hasZrghtNeighbor_P())
     vector[nx - 2][1][nz - 2] += vector[nx - 1][0][nz - 1];
-  if (vct->hasXleftNeighbor() && vct->hasYleftNeighbor() && vct->hasZrghtNeighbor())
+  if (vct->hasXleftNeighbor_P() && vct->hasYleftNeighbor_P() && vct->hasZrghtNeighbor_P())
     vector[1][1][nz - 2] += vector[0][0][nz - 1];
-  if (vct->hasXrghtNeighbor() && vct->hasYrghtNeighbor() && vct->hasZleftNeighbor())
+  if (vct->hasXrghtNeighbor_P() && vct->hasYrghtNeighbor_P() && vct->hasZleftNeighbor_P())
     vector[nx - 2][ny - 2][1] += vector[nx - 1][ny - 1][0];
-  if (vct->hasXleftNeighbor() && vct->hasYrghtNeighbor() && vct->hasZleftNeighbor())
+  if (vct->hasXleftNeighbor_P() && vct->hasYrghtNeighbor_P() && vct->hasZleftNeighbor_P())
     vector[1][ny - 2][1] += vector[0][ny - 1][0] ;
-  if (vct->hasXrghtNeighbor() && vct->hasYleftNeighbor() && vct->hasZleftNeighbor())
+  if (vct->hasXrghtNeighbor_P() && vct->hasYleftNeighbor_P() && vct->hasZleftNeighbor_P())
     vector[nx - 2][1][1] += vector[nx - 1][0][0] ;
-  if (vct->hasXleftNeighbor() && vct->hasYleftNeighbor() && vct->hasZleftNeighbor())
+  if (vct->hasXleftNeighbor_P() && vct->hasYleftNeighbor_P() && vct->hasZleftNeighbor_P())
     vector[1][1][1] += vector[0][0][0];
 
 }
 /** communicate and sum shared ghost cells */
 void communicateInterp(int nx, int ny, int nz, double*** vector, const VirtualTopology3D * vct, EMfields3D *EMf)
 {
-	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,false,true);
+	NBDerivedHaloComm(nx, ny, nz, vector, vct, EMf, true,false,true,true);
 }
