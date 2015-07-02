@@ -7,7 +7,7 @@
 #include "Collective.h"
 #include "Grid3DCU.h"
 #include "VCtopology3D.h"
-#include "Particles3Dcomm.h"
+#include "Particles3D.h"
 #include "EMfields3D.h"
 #include "math.h"
 #include <algorithm>
@@ -662,6 +662,115 @@ void ByteSwap(unsigned char * b, int n)
    }
 }
 
-void WritePclsVTK(int nspec, Grid3DCU *grid, Particles3D *part, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle){
+void WriteTestPclsVTK(int nspec, Grid3DCU *grid, Particles3D *testpart, EMfields3D *EMf,
+		CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle,MPI_Request *testpartMPIReq, MPI_File *fh){
+	MPI_Status  *status;
+	if(cycle>0){dprintf("Previous writing done");
+		MPI_Wait(testpartMPIReq, status);dprintf("Previous writing done");
+		int error_code=status->MPI_ERROR;
+		if (error_code != MPI_SUCCESS) {
+			char error_string[100];
+			int length_of_error_string, error_class;
+
+			MPI_Error_class(error_code, &error_class);
+			MPI_Error_string(error_class, error_string, &length_of_error_string);
+			dprintf("MPI_Wait error: %s\n", error_string);
+		}
+		else{
+			if (vct->getCartesian_rank()==0) MPI_File_close(fh);
+			dprintf("Previous writing done");
+		}
+	}
+
+	//buffering if no full
+	const int timesteps = 10;
+	int nopStep[timesteps];
+
+
+
+	//write to parallel vtk pvtu files
+
+	int 		 is=0;
+
+	char header[12048];
+	sprintf(header, "<?xml version=\"1.0\"?>\n"
+					"<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"%s\">\n"
+				    "  <UnstructuredGrid>\n"
+					"    <Piece NumberOfPoints=\"%d\" NumberOfCells=\"1\">\n"
+					"		<Cells>\n"
+					"			<DataArray type=\"UInt8\" Name=\"connectivity\" format=\"ascii\">0 1</DataArray>\n"
+					"			<DataArray type=\"UInt8\" Name=\"offsets\" 		format=\"ascii\">0</DataArray>\n"
+					"			<DataArray type=\"UInt8\" Name=\"types\"    	format=\"ascii\">11</DataArray>\n"
+					"		</Cells>\n"
+					"		<Points>\n"
+					"        	<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n"
+					"			</DataArray>\n"
+					"		</Points>\n"
+					"	</Piece>\n"
+					"	</UnstructuredGrid>\n"
+					"</VTKFile>", (EMf->isLittleEndian() ?"LittleEndian":"BigEndian"),testpart[is].getNOP());
+
+	int nelem = strlen(header);
+	int charsize=sizeof(char);
+	MPI_Offset disp = nelem*charsize;
+
+	ostringstream filename;
+	filename << col->getSaveDirName() << "/" << col->getSimName() << "_testparticle"<< testpart[is].get_species_num() << "_cycle" << cycle << ".vtu";
+	MPI_File_open(vct->getComm(),filename.str().c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, fh);
+
+	MPI_File_set_view(*fh, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+	if (vct->getCartesian_rank()==0){
+
+		MPI_File_iwrite(*fh, header, nelem, MPI_BYTE, testpartMPIReq);
+
+	}
+
+	/*
+	 *
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints="9" NumberOfCells="1">
+        <Cells>
+        <DataArray type="Int32" Name="connectivity" format="ascii">
+          0 1 2 3 4 5 6 7 8
+        </DataArray>
+		<DataArray type="Int32" Name="offsets" format="ascii">
+		 0
+		</DataArray>
+
+		<DataArray type="UInt8" Name="types" format="ascii">
+			1
+		</DataArray>
+        </Cells>
+
+      <PointData Scalars="testpartID">
+        <DataArray type="UInt16" Name="testpartID" format="ascii">
+          0 1 2 3 4 5 6 7 8
+        </DataArray>
+
+        <DataArray type="Float32" Name="testpartVelocity" NumberOfComponents="3" format="ascii">
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+          -1 -1 -1
+        </DataArray>
+      </PointData>
+
+      <Points>
+        <DataArray type="Float32" NumberOfComponents="3" format="ascii">
+          0 0 0 0 0 1 0 0 2
+          0 1 0 0 1 1 0 1 2
+          0 2 0 0 2 1 0 2 2
+        </DataArray>
+      </Points>
+    </Piece>
+  </UnstructuredGrid>
+</VTKFile>
+	 * */
 
 }

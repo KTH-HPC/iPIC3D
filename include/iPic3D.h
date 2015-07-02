@@ -65,8 +65,6 @@ namespace iPic3D {
     void convertParticlesToSoA();
     void convertParticlesToAoS();
     void convertParticlesToSynched();
-    void flushFullBuffer(int cycle);
-    void bufferTestParticlesToSynched();
     void sortParticles();
 
   private:
@@ -101,6 +99,14 @@ namespace iPic3D {
     int first_cycle;
     int ns;
     int nstestpart;
+    MPI_Request *headerReq;
+    MPI_Request *dataReq;
+    MPI_Request *footReq;
+    float *testpclPos;
+    int    pclbuffersize;
+    float *testpclVel;
+    MPI_File fh;
+  	MPI_Status  *status;
     int nprocs;
     int myrank;
     int nsat;

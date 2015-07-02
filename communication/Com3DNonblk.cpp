@@ -1,14 +1,5 @@
-
-#include "mpi.h"
 #include "Com3DNonblk.h"
-#include "BcFields3D.h"
-#include "VCtopology3D.h"
-#include "TimeTasks.h"
-#include "ipicdefs.h"
-#include "Alloc.h"
-#include "debug.h"
-#include "parallel.h"
-#include "EMfields3D.h"
+
 
 //isCenterFlag: 1 communicateCenter; 0 communicateNode
 void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct, EMfields3D *EMf,bool isCenterFlag, bool isFaceOnlyFlag, bool needInterp, bool isParticle)

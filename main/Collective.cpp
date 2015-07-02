@@ -160,7 +160,7 @@ void Collective::ReadInput(string inputfile) {
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle",100);
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle",0);
-    TestParticlesOutputCycle = config.read < int >("TestParticlesOutputCycle",0);
+    TestParticlesOutputCycle = config.read < int >("TestPartOutputCycle",0);
     testPartFlushCycle = config.read < int >("TestParticlesOutputCycle",10);
     RestartOutputCycle = config.read < int >("RestartOutputCycle",5000);
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);

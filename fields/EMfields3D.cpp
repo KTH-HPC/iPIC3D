@@ -2066,12 +2066,9 @@ void EMfields3D::calculateE()
 
   double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
   double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
-
-  double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
-  double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
   // set to zero all the stuff 
   eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-  eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+
   eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, divE, nxc, nyc, nzc);
   eqValue(0.0, tempC, nxc, nyc, nzc);
@@ -2080,30 +2077,37 @@ void EMfields3D::calculateE()
   eqValue(0.0, gradPHIZ, nxn, nyn, nzn);
   // Adjust E calculating laplacian(PHI) = div(E) -4*PI*rho DIVERGENCE CLEANING
   if (PoissonCorrection) {
-    if (vct->getCartesian_rank() == 0)
-      cout << "*** DIVERGENCE CLEANING ***" << endl;
-    grid->divN2C(divE, Ex, Ey, Ez);
-    scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
-    sum(divE, tempC, nxc, nyc, nzc);
-    // move to krylov space 
-    phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
-    // use conjugate gradient first
-    if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, this)) {
-      if (vct->getCartesian_rank() == 0)
-        cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
-      eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
-      GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, this);
-    }
-    solver2phys(PHI, xkrylovPoisson, nxc, nyc, nzc);
-    communicateCenterBC(nxc, nyc, nzc, PHI, 2, 2, 2, 2, 2, 2, vct,this);
-    // calculate the gradient
-    grid->gradC2N(gradPHIX, gradPHIY, gradPHIZ, PHI);
-    // sub
-    sub(Ex, gradPHIX, nxn, nyn, nzn);
-    sub(Ey, gradPHIY, nxn, nyn, nzn);
-    sub(Ez, gradPHIZ, nxn, nyn, nzn);
+		double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+		double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+		eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
 
-  }                             // end of divergence cleaning 
+		if (vct->getCartesian_rank() == 0) cout << "*** DIVERGENCE CLEANING ***" << endl;
+
+		grid->divN2C(divE, Ex, Ey, Ez);
+		scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
+		sum(divE, tempC, nxc, nyc, nzc);
+		// move to krylov space
+		phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
+		// use conjugate gradient first
+		if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, this)) {
+		  if (vct->getCartesian_rank() == 0)
+			cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
+		  eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+		  GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, this);
+		}
+		solver2phys(PHI, xkrylovPoisson, nxc, nyc, nzc);
+		communicateCenterBC(nxc, nyc, nzc, PHI, 2, 2, 2, 2, 2, 2, vct,this);
+		// calculate the gradient
+		grid->gradC2N(gradPHIX, gradPHIY, gradPHIZ, PHI);
+		// sub
+		sub(Ex, gradPHIX, nxn, nyn, nzn);
+		sub(Ey, gradPHIY, nxn, nyn, nzn);
+		sub(Ez, gradPHIZ, nxn, nyn, nzn);
+
+		delete[]xkrylovPoisson;
+		delete[]bkrylovPoisson;
+  }                             // end of divergence cleaning
+
   if (vct->getCartesian_rank() == 0)
     cout << "*** MAXWELL SOLVER ***" << endl;
   // prepare the source 
@@ -2137,8 +2141,6 @@ void EMfields3D::calculateE()
   // deallocate temporary arrays
   delete[]xkrylov;
   delete[]bkrylov;
-  delete[]xkrylovPoisson;
-  delete[]bkrylovPoisson;
 }
 
 /*! Calculate sorgent for Maxwell solver */
@@ -3417,7 +3419,7 @@ void EMfields3D::initGEM()
     // initialize
     if (get_vct().getCartesian_rank() == 0) {
       cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "Initialize GEM Challenge with Perturbation" << endl;
       cout << "------------------------------------------" << endl;
       cout << "B0x                              = " << B0x << endl;
       cout << "B0y                              = " << B0y << endl;

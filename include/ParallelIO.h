@@ -25,6 +25,6 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, Particles3Dcomm *part,
 
 
 void WriteFieldsVTK(int nspec, Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle);
-void WritePclsVTK(int nspec, Grid3DCU *grid, Particles3D *part, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle);
+void WriteTestPclsVTK(int nspec, Grid3DCU *grid, Particles3D *part, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, const string & tag, int cycle, MPI_Request *testpartMPIReq, MPI_File *fh);
 void ByteSwap(unsigned char * b, int n);
 #endif
