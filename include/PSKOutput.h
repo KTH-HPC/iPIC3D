@@ -318,8 +318,8 @@ public:
     Jx,Jy,Jz
     Jsall --> to write all Js (current densities for each species) components
     Jxs,Jys,Jzs
-    rho -> number density
-    rhos -> number densities for each species
+    rho -> net charge density
+    rhos -> charge densities for each species
     pressure -> pressure tensor for each species
     position -> particle position (x,y)
     velocity -> particle velocity (u,v,w)

@@ -171,14 +171,30 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() && (col->getWriteMethod() == "shdf5"||col->getCallFinalize()||restart_cycle>0))
-  {
-    #ifndef NO_HDF5
-	  outputWrapperFPP = new OutputWrapperFPP;
-	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns,testpart,nstestpart);
-    #endif
+  if ( Parameters::get_doWriteOutput()){
+		#ifndef NO_HDF5
+	  	if(col->getWriteMethod() == "shdf5" || col->getCallFinalize() || restart_cycle>0 ||
+			  (col->getWriteMethod()=="pvtk" && !col->particle_output_is_off()) )
+		{
+			  outputWrapperFPP = new OutputWrapperFPP;
+			  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns,testpart,nstestpart);
+		}
+		#endif
+	  if(!col->field_output_is_off()){
+		  if(col->getWriteMethod()=="pvtk"){
+			  if(!(col->getFieldOutputTag()).empty())
+				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3),grid->getNYN()-3,grid->getNXN()-3,3);
+			  if(!(col->getMomentsOutputTag()).empty())
+				  momentwritebuffer=newArr3(float,(grid->getNZN()-3), grid->getNYN()-3, grid->getNXN()-3);
+		  }
+		  else if(col->getWriteMethod()=="nbcvtk"){
+			  if(!(col->getFieldOutputTag()).empty())
+				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3)*4,grid->getNYN()-3,grid->getNXN()-3,3);
+			  if(!(col->getMomentsOutputTag()).empty())
+				  momentwritebuffer=newArr3(float,(grid->getNZN()-3)*14, grid->getNYN()-3, grid->getNXN()-3);
+		  }
+	  }
   }
-
   Ke = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
@@ -399,145 +415,72 @@ void c_Solver::WriteOutput(int cycle) {
 
   if(!Parameters::get_doWriteOutput())  return;
 
-  if (col->getWriteMethod() == "pvtk"){
 
-  	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-  		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
+  if (col->getWriteMethod() == "nbcvtk"){//Non-blocking collective MPI-IO
 
-  	  if(!col->testparticle_output_is_off() && cycle%(col->getTestParticlesOutputCycle())==0){
-//  		WriteTestPclsVTK(nstestpart, grid, testpart,EMf, col, vct, "position + velocity + ID ",cycle,testpartMPIReq, fh);
+	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  if(!(col->getFieldOutputTag()).empty()){
 
-  		 const int nop = testpart[0].getNOP();
+			  if(fieldreqcounter>0){
+				  MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
+				  for(int si=0;si< fieldreqcounter;si++){
+					  int error_code = fieldstsArr[si].MPI_ERROR;
+					  if (error_code != MPI_SUCCESS) {
+						  char error_string[100];
+						  int length_of_error_string, error_class;
+						  MPI_Error_class(error_code, &error_class);
+						  MPI_Error_string(error_class, error_string, &length_of_error_string);
+						  dprintf("MPI_Waitall error at field output cycle %d  %d  %s\n",cycle, si, error_string);
+					  }else{
+						  MPI_File_close(&(fieldfhArr[si]));
+					  }
+				  }
+			  }
+			  fieldreqcounter = WriteFieldsVTKNonblk(grid, EMf, col, vct,cycle,fieldwritebuffer,fieldreqArr,fieldfhArr);
+		  }
 
-  	if(cycle>0){
-  		MPI_Wait(headerReq, status);
-  		MPI_Wait(dataReq, status);
-  		MPI_Wait(footReq, status);
-//  		MPI_File_close(&fh);
-//  		int error_code=status->MPI_ERROR;
-//  		if (error_code != MPI_SUCCESS) {
-//  			char error_string[100];
-//  			int length_of_error_string, error_class;
-//
-//  			MPI_Error_class(error_code, &error_class);
-//  			MPI_Error_string(error_class, error_string, &length_of_error_string);
-//  			dprintf("MPI_Wait error: %s\n", error_string);
-//  		}
-  	}else{
-  		pclbuffersize = nop*3*1.2;
-  		testpclPos = new float[pclbuffersize];
-  	}
+		  if(!(col->getMomentsOutputTag()).empty()){
 
-  	if(nop>pclbuffersize){
-  		pclbuffersize = nop*3*1.2;
-  		delete testpclPos;
-  		testpclPos = new float[pclbuffersize];
-  	}
+			  if(momentreqcounter>0){
+				  MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
+				  for(int si=0;si< momentreqcounter;si++){
+					  int error_code = momentstsArr[si].MPI_ERROR;
+					  if (error_code != MPI_SUCCESS) {
+						  char error_string[100];
+						  int length_of_error_string, error_class;
+						  MPI_Error_class(error_code, &error_class);
+						  MPI_Error_string(error_class, error_string, &length_of_error_string);
+						  dprintf("MPI_Waitall error at moments output cycle %d  %d %s\n",cycle, si, error_string);
+					  }else{
+						  MPI_File_close(&(momentfhArr[si]));
+					  }
+				  }
+			  }
+			  momentreqcounter = WriteMomentsVTKNonblk(grid, EMf, col, vct,cycle,momentwritebuffer,momentreqArr,momentfhArr);
+		  }
+	  }
 
-//  	for (int pidx = 0; pidx < nop; pidx++) {
-//  		testpclPos[pidx*3+0]=(float)(testpart[0]).getX(pidx);
-//  		testpclPos[pidx*3+1]=(float)(testpart[0]).getY(pidx);
-//  		testpclPos[pidx*3+2]=(float)(testpart[0]).getZ(pidx);
-//  	}
+	  //Particle information is still in hdf5
+	  	WriteParticles(cycle);
+	  //Test Particle information is still in hdf5
+	    WriteTestParticles(cycle);
 
-  	//write to parallel vtk pvtu files
-  	int  is=0;
-	ostringstream filename;
-	filename << col->getSaveDirName() << "/" << col->getSimName() << "_testparticle"<< testpart[is].get_species_num() << "_cycle" << cycle << ".vtu";
-	MPI_File_open(vct->getComm(),filename.str().c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
-	MPI_File_set_view(fh, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+  }else if (col->getWriteMethod() == "pvtk"){//Blocking collective MPI-IO
+	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  if(!(col->getFieldOutputTag()).empty()){
+			  //WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle);//B + E + Je + Ji + rho
+			  WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle, fieldwritebuffer);//B + E + Je + Ji + rho
+		  }
+		  if(!(col->getMomentsOutputTag()).empty()){
+			  WriteMomentsVTK(grid, EMf, col, vct, col->getMomentsOutputTag() ,cycle, momentwritebuffer);
+		  }
+	  }
 
-	  ofstream myfile;
-	  myfile.open ("example.vtu");
-	  myfile <<  "<?xml version=\"1.0\"?>\n"
-				"<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
-			    "  <UnstructuredGrid>\n"
-				"    <Piece NumberOfPoints=\"1\" NumberOfCells=\"1\">\n"
-				"		<Cells>\n"
-				"			<DataArray type=\"UInt8\" Name=\"connectivity\" format=\"ascii\">0 1</DataArray>\n"
-				"			<DataArray type=\"UInt8\" Name=\"offsets\" 		format=\"ascii\">1</DataArray>\n"
-				"			<DataArray type=\"UInt8\" Name=\"types\"    	format=\"ascii\">1</DataArray>\n"
-				"		</Cells>\n"
-				"		<Points>\n"
-				"        	<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"acscii\">\n" <<
-				(testpart[0]).getX(100) << (testpart[0]).getY(100)  << (testpart[0]).getZ(100) <<
-				 "			</DataArray>\n"
-				  	  					"		</Points>\n"
-				  	  					"	</Piece>\n"
-				  	  					"	</UnstructuredGrid>\n"
-				  	  					"</VTKFile>";
-	  myfile.close();
+	  //Particle information is still in hdf5
+	  	WriteParticles(cycle);
+	  //Test Particle information is still in hdf5
+	    WriteTestParticles(cycle);
 
-  	char header[8192];
-  	sprintf(header, "<?xml version=\"1.0\"?>\n"
-  					"<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"%s\">\n"
-  				    "  <UnstructuredGrid>\n"
-  					"    <Piece NumberOfPoints=\"%d\" NumberOfCells=\"1\">\n"
-  					"		<Cells>\n"
-  					"			<DataArray type=\"UInt8\" Name=\"connectivity\" format=\"ascii\">0 1</DataArray>\n"
-  					"			<DataArray type=\"UInt8\" Name=\"offsets\" 		format=\"ascii\">1</DataArray>\n"
-  					"			<DataArray type=\"UInt8\" Name=\"types\"    	format=\"ascii\">1</DataArray>\n"
-  					"		</Cells>\n"
-  					"		<Points>\n"
-  					"        	<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"binary\">\n",
-  					(EMf->isLittleEndian() ?"LittleEndian":"BigEndian"),3);
-
-  	int nelem = strlen(header);
-  	int charsize=sizeof(char);
-  	MPI_Offset disp = nelem*charsize;
-
-  	//MPI_File_iwrite(fh, header, nelem, MPI_BYTE, headerReq);
-  	MPI_File_write(fh, header, nelem, MPI_BYTE, status);
-
-  	int err = MPI_File_set_view(fh, disp, MPI_FLOAT, MPI_FLOAT, "native", MPI_INFO_NULL);
-  	if(err){
-  		          dprintf("Error in MPI_File_set_view\n");
-  		      }
-
-	//dprintf("testpart[is].getNOP() = %d, sizeof(SpeciesParticle)=%d, u = %f, x = %f ",testpart[0].getNOP(), sizeof(SpeciesParticle), pcl.get_u(), pcl.get_x());
-	//const SpeciesParticle *pclptr = testpart[is].get_pclptr(0);
-	//const SpeciesParticle * pclptr = (SpeciesParticle * )temppcl;
-	//dprintf("temppcl u = %f, x= %f",pclptr->get_u() , pclptr->get_x());
-//	MPI_Datatype particleType;
-//	MPI_Type_vector (10,3,sizeof(SpeciesParticle),MPI_DOUBLE,&particleType);//testpart[0].getNOP()
-//	MPI_Type_commit(&particleType);
-
-  	//MPI_File_iwrite(fh, pclptr, 1, particleType, dataReq);
-  	testpclPos[0]=1.1;testpclPos[1]=2.1;testpclPos[2]=3.1;
-  	testpclPos[3]=1.1;testpclPos[4]=2.1;testpclPos[5]=3.1;
-  	testpclPos[6]=1.1;testpclPos[7]=2.1;testpclPos[8]=3.1;
-  	MPI_File_write_all(fh, testpclPos, 9, MPI_FLOAT, status);
-  	 int tcount=0;
-	  MPI_Get_count(status, MPI_FLOAT, &tcount);
-	  dprintf(" wrote %i MPI_FLOAT",  tcount);
-	int error_code=status->MPI_ERROR;
-	if (error_code != MPI_SUCCESS) {
-		char error_string[100];
-		int length_of_error_string, error_class;
-
-		MPI_Error_class(error_code, &error_class);
-		MPI_Error_string(error_class, error_string, &length_of_error_string);
-		dprintf("MPI_File_write error: %s\n", error_string);
-	}
-
-  	char foot[8192];
-  	sprintf(foot, "			</DataArray>\n"
-  	  					"		</Points>\n"
-  	  					"	</Piece>\n"
-  	  					"	</UnstructuredGrid>\n"
-  	  					"</VTKFile>");
-  	//nelem = strlen(foot);
-  	//MPI_File_set_view(fh, disp+9, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
-  	//MPI_File_iwrite(fh, foot, nelem, MPI_BYTE, footReq);
-  	//MPI_File_write(fh, foot, nelem, MPI_BYTE, status);
-
-  	if(cycle==LastCycle()){
-  		MPI_Wait(headerReq, status);
-  		MPI_Wait(dataReq, status);
-  		MPI_Wait(footReq, status);
-  	    MPI_File_close(&fh);
-  	}
-  	  }
   }else{
 
 		#ifdef NO_HDF5
@@ -665,11 +608,14 @@ void c_Solver::WriteVirtualSatelliteTraces()
 void c_Solver::WriteFields(int cycle) {
 
 #ifndef NO_HDF5
-  if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
+  if(col->field_output_is_off())   return;
 
   if(cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle)
   {
-	  fetch_outputWrapperFPP().append_output("Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
+	  if(!(col->getFieldOutputTag()).empty())
+		  	  fetch_outputWrapperFPP().append_output((col->getFieldOutputTag()).c_str(), cycle);//E+B+Js
+	  if(!(col->getMomentsOutputTag()).empty())
+		  	  fetch_outputWrapperFPP().append_output((col->getMomentsOutputTag()).c_str(), cycle);//rhos+pressure
   }
 #endif
 }
@@ -683,7 +629,7 @@ void c_Solver::WriteParticles(int cycle)
   for (int i = 0; i < ns; i++)
     part[i].convertParticlesToSynched();
 
-  fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+  fetch_outputWrapperFPP().append_output((col->getPclOutputTag()).c_str(), cycle, 0);//"position + velocity + q "
 #endif
 }
 

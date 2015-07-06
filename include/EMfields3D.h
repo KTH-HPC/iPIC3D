@@ -227,11 +227,23 @@ class EMfields3D                // :public Field
     double getBzTot(int X, int Y, int Z) const{return Bzn.get(X,Y,Z)+Bz_ext.get(X,Y,Z);}
 
     arr4_double getpXXsn() { return pXXsn; }
+    double getpXXsn(int X,int Y,int Z,int is)const{return pXXsn.get(is,X,Y,Z);}
+
     arr4_double getpXYsn() { return pXYsn; }
+    double getpXYsn(int X,int Y,int Z,int is)const{return pXYsn.get(is,X,Y,Z);}
+
     arr4_double getpXZsn() { return pXZsn; }
+    double getpXZsn(int X,int Y,int Z,int is)const{return pXZsn.get(is,X,Y,Z);}
+
     arr4_double getpYYsn() { return pYYsn; }
+    double getpYYsn(int X,int Y,int Z,int is)const{return pYYsn.get(is,X,Y,Z);}
+
     arr4_double getpYZsn() { return pYZsn; }
+    double getpYZsn(int X,int Y,int Z,int is)const{return pYZsn.get(is,X,Y,Z);}
+
     arr4_double getpZZsn() { return pZZsn; }
+    double getpZZsn(int X,int Y,int Z,int is)const{return pZZsn.get(is,X,Y,Z);}
+
 
     double getJx(int X, int Y, int Z) const { return Jx.get(X,Y,Z);}
     double getJy(int X, int Y, int Z) const { return Jy.get(X,Y,Z);}
@@ -277,7 +289,9 @@ class EMfields3D                // :public Field
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
 
+
     MPI_Datatype getProcview(){return  procview;}
+    MPI_Datatype getXYZeType(){return xyzcomp;}
     MPI_Datatype getProcviewXYZ(){return  procviewXYZ;}
     MPI_Datatype getGhostType(){return  ghosttype;}
 

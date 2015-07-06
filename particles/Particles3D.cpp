@@ -666,7 +666,6 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 }
 
 
-
 void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 {
     // The local average number of PC iterations
@@ -1649,8 +1648,7 @@ void Particles3D::repopulate_particles()
     int zend = nzc-2;
     if (repopulateXleft)
     {
-      cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
-  
+      //cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
       for (int i=1; i<= num_layers; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)

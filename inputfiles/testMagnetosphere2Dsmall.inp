@@ -10,7 +10,7 @@ NpMaxNpRatio = 3.0
 
 Case              = Dipole2D 
 PoissonCorrection = no       # Poisson correction
-WriteMethod       = pvtk   # Output method [ default | Parallel ]
+WriteMethod       = nbcvtk     # Output method [ shdf5 || pvtk ||nbcvtk]
 SimulationName    = DipoleTest  # Simulation name for the output
 
 #  Initial Magnetic Field
@@ -26,7 +26,7 @@ B1z = 2.0
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.15                   # dt = time step  
-ncycles = 1001	    #!!!    # cycles
+ncycles = 21	    #!!!    # cycles
 th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
 
@@ -143,9 +143,12 @@ w0 = 0.0	0.0
 # mover predictor corrector iteration
     NiterMover = 8
 # Output for field
-   FieldOutputCycle = 50
+   FieldOutputCycle = 10
+   FieldOutputTag   = B+E+Je+Ji
+   MomentsOutputTag = rho+PXX+PXY+PXZ+PYY+PYZ+PZZ
 # Output for particles if 0 it doesnt save particles data
-   ParticlesOutputCycle = 10
+   ParticlesOutputCycle = 15
+   ParticlesOutputTag = position+velocity+q 
 # restart cycle
    RestartOutputCycle = 0
-CallFinalize=0
+   CallFinalize=1
