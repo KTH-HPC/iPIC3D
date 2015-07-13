@@ -154,6 +154,9 @@ class Collective
     string getCase()const{ return (Case); }
     string getSimName()const{ return (SimName); }
     string getWriteMethod()const{ return (wmethod); }
+    string getFieldOutputTag()const{return FieldOutputTag;}
+    string getMomentsOutputTag()const{return MomentsOutputTag;}
+    string getPclOutputTag()const{return ParticlesOutputTag;}
     string getPoissonCorrection()const{ return (PoissonCorrection); }
     int getLast_cycle()const{ return (last_cycle); }
     double getVinj()const{ return (Vinj); }
@@ -376,8 +379,11 @@ class Collective
 
     /*! Output for field */
     int FieldOutputCycle;
+    string  FieldOutputTag;
+    string  MomentsOutputTag;
     /*! Output for particles */
     int ParticlesOutputCycle;
+    string ParticlesOutputTag;
     /*! Output for test particles */
     int TestParticlesOutputCycle;
     /*! test particles are flushed to disk every testPartFlushCycle  */

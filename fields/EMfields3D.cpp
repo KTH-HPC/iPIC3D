@@ -309,7 +309,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
     MPI_Type_indexed(4, blocklengthN, displacementsN, MPI_DOUBLE, &cornertypeN);
     MPI_Type_commit(&cornertypeN);
 
-    if (col->getWriteMethod() == "pvtk"){
+    if (col->getWriteMethod() == "pvtk" || col->getWriteMethod() == "nbcvtk"){
     	//test Endian
     	int TestEndian = 1;
     	lEndFlag =*(char*)&TestEndian;
@@ -2110,6 +2110,41 @@ void EMfields3D::calculateE()
 
   if (vct->getCartesian_rank() == 0) cout << "*** MAXWELL SOLVER ***" << endl;
 
+=======
+		double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+		double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+		eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+
+		if (vct->getCartesian_rank() == 0) cout << "*** DIVERGENCE CLEANING ***" << endl;
+
+		grid->divN2C(divE, Ex, Ey, Ez);
+		scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
+		sum(divE, tempC, nxc, nyc, nzc);
+		// move to krylov space
+		phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
+		// use conjugate gradient first
+		if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, this)) {
+		  if (vct->getCartesian_rank() == 0)
+			cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
+		  eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+		  GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, this);
+		}
+		solver2phys(PHI, xkrylovPoisson, nxc, nyc, nzc);
+		communicateCenterBC(nxc, nyc, nzc, PHI, 2, 2, 2, 2, 2, 2, vct,this);
+		// calculate the gradient
+		grid->gradC2N(gradPHIX, gradPHIY, gradPHIZ, PHI);
+		// sub
+		sub(Ex, gradPHIX, nxn, nyn, nzn);
+		sub(Ey, gradPHIY, nxn, nyn, nzn);
+		sub(Ez, gradPHIZ, nxn, nyn, nzn);
+
+		delete[]xkrylovPoisson;
+		delete[]bkrylovPoisson;
+  }                             // end of divergence cleaning
+
+  if (vct->getCartesian_rank() == 0)
+    cout << "*** MAXWELL SOLVER ***" << endl;
+>>>>>>> 0aab286c7e864873d624b441740eeeed9908449a
   // prepare the source 
   MaxwellSource(bkrylov);
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
@@ -2142,7 +2177,6 @@ void EMfields3D::calculateE()
   // deallocate temporary arrays
   delete[]xkrylov;
   delete[]bkrylov;
-
 }
 
 /*! Calculate sorgent for Maxwell solver */
@@ -3426,7 +3460,7 @@ void EMfields3D::initGEM()
     // initialize
     if (get_vct().getCartesian_rank() == 0) {
       cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "Initialize GEM Challenge with Perturbation" << endl;
       cout << "------------------------------------------" << endl;
       cout << "B0x                              = " << B0x << endl;
       cout << "B0y                              = " << B0y << endl;

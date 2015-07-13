@@ -90,6 +90,7 @@ class Particles3D:public Particles3Dcomm {
     double deleteParticlesInsideSphere2DPlaneXZ(double R, double x_center, double z_center);
     /**Particles Open Boundary */
     void openbc_particles_outflow();
+    void openbc_delete_testparticles();
     void openbc_particles_inflow();
 
 #ifdef BATSRUS

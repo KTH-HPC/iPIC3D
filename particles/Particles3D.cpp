@@ -666,7 +666,6 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 }
 
 
-
 void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 {
     // The local average number of PC iterations
@@ -1666,7 +1665,6 @@ void Particles3D::repopulate_particles()
     if (repopulateXleft)
     {
       //cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
-  
       for (int i=1; i<= num_layers; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)
@@ -1925,7 +1923,6 @@ void Particles3D::openbc_particles_outflow()
 
     if(apply_openBC[dir_cnt]){
       //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
-
 		  int pidx = 0;
 		  int direction = dir_cnt/2;
 		  double delbry  = delete_boundary[dir_cnt];
@@ -1976,6 +1973,58 @@ void Particles3D::openbc_particles_outflow()
 
   for(int outId=0;outId<nop_created;outId++)
 	  _pcls.push_back(injpcls[outId]);
+}
+
+//Simply delete exiting test particles if openBC
+void Particles3D::openbc_delete_testparticles()
+{
+  // if this is not a boundary process then there is nothing to do
+  if(!vct->isBoundaryProcess_P()) return;
+
+  //The below is OpenBC outflow for all other boundaries
+  using namespace BCparticles;
+
+  const bool openXleft = !vct->getPERIODICX_P() && vct->noXleftNeighbor_P() &&  (bcPfaceXleft == OPENBCOut||bcPfaceXleft == REEMISSION);
+  const bool openYleft = !vct->getPERIODICY_P() && vct->noYleftNeighbor_P() &&  (bcPfaceYleft == OPENBCOut||bcPfaceYleft == REEMISSION);
+  const bool openZleft = !vct->getPERIODICZ_P() && vct->noZleftNeighbor_P() &&  (bcPfaceZleft == OPENBCOut||bcPfaceZleft == REEMISSION);
+
+  const bool openXright = !vct->getPERIODICX_P() && vct->noXrghtNeighbor_P() && (bcPfaceXright == OPENBCOut||bcPfaceXright == REEMISSION);
+  const bool openYright = !vct->getPERIODICY_P() && vct->noYrghtNeighbor_P() && (bcPfaceYright == OPENBCOut||bcPfaceYright == REEMISSION);
+  const bool openZright = !vct->getPERIODICZ_P() && vct->noZrghtNeighbor_P() && (bcPfaceZright == OPENBCOut||bcPfaceZright == REEMISSION);
+  //dprintf( "Entered openbc_delete_testparticles %d %d %d %d %d %d", openXleft,openXright,openYleft,openYright,openZleft,openZright);
+  if(!openXleft && !openYleft && !openZleft && !openXright && !openYright && !openZright)  return;
+
+  const bool   apply_openBC[6]    = {openXleft, openXright,openYleft, openYright,openZleft, openZright};
+  const double delete_boundary[6] = {0, Lx,0, Ly,0, Lz};
+
+  for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
+
+    if(apply_openBC[dir_cnt]){
+
+		  int pidx = 0;
+		  int delnop = 0;
+		  int direction = dir_cnt/2;
+		  double delbry  = delete_boundary[dir_cnt];
+		  double location;
+		  while(pidx < getNOP())
+		  {
+		     SpeciesParticle& pcl = _pcls[pidx];
+		     location = pcl.get_x(direction);
+
+		     // delete the exiting particle if out of box on the direction of OpenBC
+		     if((dir_cnt%2==0 && location<delbry) ||(dir_cnt%2==1 && location>delbry)){
+		    	 delete_particle(pidx);
+		    	 delnop++;
+		     }
+		     else {
+		    	 pidx ++;
+		     }
+		   }
+		  dprintf( "*** Delete %d Test Particle for OpenBC for Direction %d on particle species %d",delnop, dir_cnt, ns);
+	  }
+
+  }
+
 }
 
 

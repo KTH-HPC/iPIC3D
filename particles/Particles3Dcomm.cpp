@@ -170,6 +170,7 @@ if( !isTestParticle ){
 }else{
 	pitch_angle = col->getPitchAngle(get_species_num()-col->getNs());
 	energy = col->getEnergy(get_species_num()-col->getNs());
+	TrackParticleID = true;
 }
   dt = col->getDt();
   Lx = col->getLx();
@@ -1414,7 +1415,7 @@ void Particles3Dcomm::recommunicate_particles_until_done(int min_num_iterations)
   {
     flush_send(); // flush sending of particles
     num_pcls_sent = handle_received_particles();
-    //dprintf("spec %d #pcls sent = %d", ns, num_pcls_sent);
+    //dprintf("spec %d #pcls sent = %d iterations %d", ns, num_pcls_sent, i);
   }
 
   // apply boundary conditions to incoming particles
@@ -1441,9 +1442,8 @@ void Particles3Dcomm::recommunicate_particles_until_done(int min_num_iterations)
   // that there are no more particles to be received.
   //
   long long total_num_pcls_sent = mpi_global_sum(num_pcls_sent);
-  if(print_pcl_comm_counts)
-    dprintf("spec %d pcls sent: %d, %d",
-      ns, num_pcls_sent, total_num_pcls_sent);
+
+  //dprintf("spec %d pcls sent: %d, %d", ns, num_pcls_sent, total_num_pcls_sent);
 
   // the maximum number of neighbor communications that would
   // be needed to put a particle in the correct mesh cell
@@ -1849,7 +1849,6 @@ void Particles3Dcomm::copyParticlesToSoA()
   timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_SOA);
   const int nop = _pcls.size();
   // create memory for SoA representation
-  //if(is_output_thread()) dprintf("copying to struct of arrays");
   resize_SoA(nop);
  #ifndef __MIC__stub // replace with __MIC__ when this has been debugged
   #pragma omp for
@@ -1948,26 +1947,6 @@ void Particles3Dcomm::convertParticlesToSynched()
   particleType = ParticleType::synched;
 }
 
-// synched AoS and SoA conceptually implies a write-lock
-//
-void Particles3Dcomm::bufferTestParticlesToSynched()
-{
-  switch(particleType)
-  {
-    default:
-      unsupported_value_error(particleType);
-    case ParticleType::SoA:
-      copyParticlesToAoS();
-      break;
-    case ParticleType::AoS:
-      copyParticlesToSoA();
-      break;
-    case ParticleType::synched:
-      break;
-  }
-  // this state conceptually implies a write-lock
-  particleType = ParticleType::synched;
-}
 
 // defines AoS to be the authority
 // (conceptually releasing any write-lock)

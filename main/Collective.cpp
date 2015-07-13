@@ -160,7 +160,10 @@ void Collective::ReadInput(string inputfile) {
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle",100);
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle",0);
-    TestParticlesOutputCycle = config.read < int >("TestParticlesOutputCycle",0);
+    FieldOutputTag     =   config.read <string>("FieldOutputTag","");
+    ParticlesOutputTag =   config.read <string>("ParticlesOutputTag","");
+    MomentsOutputTag   =   config.read <string>("MomentsOutputTag","");
+    TestParticlesOutputCycle = config.read < int >("TestPartOutputCycle",0);
     testPartFlushCycle = config.read < int >("TestParticlesOutputCycle",10);
     RestartOutputCycle = config.read < int >("RestartOutputCycle",5000);
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
@@ -468,7 +471,7 @@ void Collective::ReadInput(string inputfile) {
 
 bool Collective::field_output_is_off()const
 {
-  return getFieldOutputCycle() <= 0;
+  return (FieldOutputCycle <= 0);
 }
 
 bool Collective::particle_output_is_off()const

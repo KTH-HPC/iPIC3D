@@ -171,14 +171,30 @@ int c_Solver::Init(int argc, char **argv) {
 	   }
   }
 
-  if ( Parameters::get_doWriteOutput() && (col->getWriteMethod() == "shdf5"||col->getCallFinalize()||restart_cycle>0))
-  {
-    #ifndef NO_HDF5
-	  outputWrapperFPP = new OutputWrapperFPP;
-	  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns,testpart,nstestpart);
-    #endif
+  if ( Parameters::get_doWriteOutput()){
+		#ifndef NO_HDF5
+	  	if(col->getWriteMethod() == "shdf5" || col->getCallFinalize() || restart_cycle>0 ||
+			  (col->getWriteMethod()=="pvtk" && !col->particle_output_is_off()) )
+		{
+			  outputWrapperFPP = new OutputWrapperFPP;
+			  fetch_outputWrapperFPP().init_output_files(col,vct,grid,EMf,part,ns,testpart,nstestpart);
+		}
+		#endif
+	  if(!col->field_output_is_off()){
+		  if(col->getWriteMethod()=="pvtk"){
+			  if(!(col->getFieldOutputTag()).empty())
+				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3),grid->getNYN()-3,grid->getNXN()-3,3);
+			  if(!(col->getMomentsOutputTag()).empty())
+				  momentwritebuffer=newArr3(float,(grid->getNZN()-3), grid->getNYN()-3, grid->getNXN()-3);
+		  }
+		  else if(col->getWriteMethod()=="nbcvtk"){
+			  if(!(col->getFieldOutputTag()).empty())
+				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3)*4,grid->getNYN()-3,grid->getNXN()-3,3);
+			  if(!(col->getMomentsOutputTag()).empty())
+				  momentwritebuffer=newArr3(float,(grid->getNZN()-3)*14, grid->getNYN()-3, grid->getNXN()-3);
+		  }
+	  }
   }
-
   Ke = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
@@ -345,7 +361,6 @@ bool c_Solver::ParticlesMover()
   /* --------------------------------------- */
   /* Remove particles from depopulation area */
   /* --------------------------------------- */
-
   if (col->getCase()=="Dipole") {
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
@@ -356,12 +371,37 @@ bool c_Solver::ParticlesMover()
 
 
   /* --------------------------------------- */
-  /* Test Particles use AoS classical mover */
+  /* Test Particles mover 					 */
   /* --------------------------------------- */
+  for (int i = 0; i < nstestpart; i++)  // move each species
+  {
+	switch(Parameters::get_MOVER_TYPE())
+	{
+	  case Parameters::SoA:
+		  testpart[i].mover_PC(EMf);
+		break;
+	  case Parameters::AoS:
+		  testpart[i].mover_PC_AoS(EMf);
+		break;
+	  case Parameters::AoS_Relativistic:
+		  testpart[i].mover_PC_AoS_Relativistic(EMf);
+		break;
+	  case Parameters::AoSintr:
+		  testpart[i].mover_PC_AoS_vec_intr(EMf);
+		break;
+	  case Parameters::AoSvec:
+		  testpart[i].mover_PC_AoS_vec(EMf);
+		break;
+	  default:
+		unsupported_value_error(Parameters::get_MOVER_TYPE());
+	}
+
+	testpart[i].openbc_delete_testparticles();
+	testpart[i].separate_and_send_particles();
+  }
+
   for (int i = 0; i < nstestpart; i++)
   {
-	  testpart[i].mover_PC_AoS(EMf);
-	  testpart[i].separate_and_send_particles();
 	  testpart[i].recommunicate_particles_until_done(1);
   }
 
@@ -375,13 +415,71 @@ void c_Solver::WriteOutput(int cycle) {
 
   if(!Parameters::get_doWriteOutput())  return;
 
-  if (col->getWriteMethod() == "pvtk"){
 
-  	  if (!col->field_output_is_off() && cycle%(col->getFieldOutputCycle())==0)
-  		  WriteFieldsVTK(ns, grid, EMf, col, vct, "B + E + Je + Ji + rho",cycle);
+  if (col->getWriteMethod() == "nbcvtk"){//Non-blocking collective MPI-IO
 
-  	  if(!col->particle_output_is_off() && cycle%(col->getParticlesOutputCycle())==0)
-  		  WritePclsVTK(ns, grid, part, col, vct, "position + velocity + q ",cycle);
+	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  if(!(col->getFieldOutputTag()).empty()){
+
+			  if(fieldreqcounter>0){
+				  MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
+				  for(int si=0;si< fieldreqcounter;si++){
+					  int error_code = fieldstsArr[si].MPI_ERROR;
+					  if (error_code != MPI_SUCCESS) {
+						  char error_string[100];
+						  int length_of_error_string, error_class;
+						  MPI_Error_class(error_code, &error_class);
+						  MPI_Error_string(error_class, error_string, &length_of_error_string);
+						  dprintf("MPI_Waitall error at field output cycle %d  %d  %s\n",cycle, si, error_string);
+					  }else{
+						  MPI_File_close(&(fieldfhArr[si]));
+					  }
+				  }
+			  }
+			  fieldreqcounter = WriteFieldsVTKNonblk(grid, EMf, col, vct,cycle,fieldwritebuffer,fieldreqArr,fieldfhArr);
+		  }
+
+		  if(!(col->getMomentsOutputTag()).empty()){
+
+			  if(momentreqcounter>0){
+				  MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
+				  for(int si=0;si< momentreqcounter;si++){
+					  int error_code = momentstsArr[si].MPI_ERROR;
+					  if (error_code != MPI_SUCCESS) {
+						  char error_string[100];
+						  int length_of_error_string, error_class;
+						  MPI_Error_class(error_code, &error_class);
+						  MPI_Error_string(error_class, error_string, &length_of_error_string);
+						  dprintf("MPI_Waitall error at moments output cycle %d  %d %s\n",cycle, si, error_string);
+					  }else{
+						  MPI_File_close(&(momentfhArr[si]));
+					  }
+				  }
+			  }
+			  momentreqcounter = WriteMomentsVTKNonblk(grid, EMf, col, vct,cycle,momentwritebuffer,momentreqArr,momentfhArr);
+		  }
+	  }
+
+	  //Particle information is still in hdf5
+	  	WriteParticles(cycle);
+	  //Test Particle information is still in hdf5
+	    WriteTestParticles(cycle);
+
+  }else if (col->getWriteMethod() == "pvtk"){//Blocking collective MPI-IO
+	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  if(!(col->getFieldOutputTag()).empty()){
+			  //WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle);//B + E + Je + Ji + rho
+			  WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle, fieldwritebuffer);//B + E + Je + Ji + rho
+		  }
+		  if(!(col->getMomentsOutputTag()).empty()){
+			  WriteMomentsVTK(grid, EMf, col, vct, col->getMomentsOutputTag() ,cycle, momentwritebuffer);
+		  }
+	  }
+
+	  //Particle information is still in hdf5
+	  	WriteParticles(cycle);
+	  //Test Particle information is still in hdf5
+	    WriteTestParticles(cycle);
 
   }else{
 
@@ -413,7 +511,7 @@ void c_Solver::WriteOutput(int cycle) {
 
 					WriteParticles(cycle);
 
-					if(nstestpart > 0) WriteTestParticles(cycle);
+					WriteTestParticles(cycle);
 
 			}else{
 			  warning_printf(
@@ -428,7 +526,7 @@ void c_Solver::WriteRestart(int cycle)
 {
 #ifndef NO_HDF5
   if (restart_cycle>0 && cycle%restart_cycle==0){
-	  convertParticlesToSynched(); // hack
+	  convertParticlesToSynched();
 	  fetch_outputWrapperFPP().append_restart(cycle);
   }
 #endif
@@ -510,11 +608,14 @@ void c_Solver::WriteVirtualSatelliteTraces()
 void c_Solver::WriteFields(int cycle) {
 
 #ifndef NO_HDF5
-  if(col->field_output_is_off() || cycle%(col->getFieldOutputCycle())!=0)   return;
+  if(col->field_output_is_off())   return;
 
   if(cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle)
   {
-	  fetch_outputWrapperFPP().append_output("Eall + Ball + rhos + Jsall", cycle);//Eall + Ball + rhos + Jsall + pressure
+	  if(!(col->getFieldOutputTag()).empty())
+		  	  fetch_outputWrapperFPP().append_output((col->getFieldOutputTag()).c_str(), cycle);//E+B+Js
+	  if(!(col->getMomentsOutputTag()).empty())
+		  	  fetch_outputWrapperFPP().append_output((col->getMomentsOutputTag()).c_str(), cycle);//rhos+pressure
   }
 #endif
 }
@@ -528,19 +629,20 @@ void c_Solver::WriteParticles(int cycle)
   for (int i = 0; i < ns; i++)
     part[i].convertParticlesToSynched();
 
-  fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
+  fetch_outputWrapperFPP().append_output((col->getPclOutputTag()).c_str(), cycle, 0);//"position + velocity + q "
 #endif
 }
 
 void c_Solver::WriteTestParticles(int cycle)
 {
 #ifndef NO_HDF5
-  if(col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
+  if(nstestpart == 0 || col->testparticle_output_is_off() || cycle%(col->getTestParticlesOutputCycle())!=0) return;
 
   // this is a hack
   for (int i = 0; i < nstestpart; i++)
     testpart[i].convertParticlesToSynched();
-  fetch_outputWrapperFPP().append_output("testpartpos + testpartvel + testpartcharge", cycle, 0);
+
+  fetch_outputWrapperFPP().append_output("testpartpos + testpartvel+ testparttag", cycle, 0); // + testpartcharge
 #endif
 }
 
@@ -552,7 +654,6 @@ void c_Solver::Finalize() {
   {
     #ifndef NO_HDF5
     convertParticlesToSynched();
-    //writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, vct, col, grid, EMf, part, 0);
     fetch_outputWrapperFPP().append_restart((col->getNcycles() + first_cycle) - 1);
     #endif
   }
@@ -572,6 +673,9 @@ void c_Solver::pad_particle_capacities()
 {
   for (int i = 0; i < ns; i++)
     part[i].pad_capacities();
+
+  for (int i = 0; i < nstestpart; i++)
+    testpart[i].pad_capacities();
 }
 
 // convert particle to struct of arrays (assumed by I/O)
@@ -598,19 +702,7 @@ void c_Solver::convertParticlesToSynched()
     testpart[i].convertParticlesToSynched();
 }
 
-//flush to disk if test particle buffer is full
-void c_Solver::flushFullBuffer(int cycle){
-  /*	if(cycle >0 && cycle % (col->getTestPartFlushCycle()*col->getTestParticlesOutputCycle()) == 0)
-		fetch_outputWrapperFPP().append_output("position + velocity + q ", cycle, 0);
-  */
-}
 
-// buffering test particles
-void c_Solver::bufferTestParticlesToSynched()
-{
-  for (int i = 0; i < nstestpart; i++)
-    testpart[i].bufferTestParticlesToSynched();
-}
 
 int c_Solver::LastCycle() {
     return (col->getNcycles() + first_cycle);

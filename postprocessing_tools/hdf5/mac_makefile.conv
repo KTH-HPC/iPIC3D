@@ -16,6 +16,16 @@ HDF5_2_VTK: HDF5_2_VTK.cpp
 HDF5_TestParticles: HDF5_TestParticles.cpp 
 	${CPP} -o  HDF5_TestParticles ${INC_HDF5} ${LIB_HDF5} ${HDF5LIBS} HDF5_TestParticles.cpp 	
 
+
+HDF5_Particles: HDF5_Particles.cpp 
+	${CPP} -o  HDF5_Particles ${INC_HDF5} ${LIB_HDF5} ${HDF5LIBS} HDF5_Particles.cpp
+
+HDF5_ParticlesDist: HDF5_ParticlesDist.cpp 
+	${CPP} -o  ParticlesDist ${INC_HDF5} ${LIB_HDF5} ${HDF5LIBS} HDF5_ParticlesDist.cpp
+ 	
+HDF5_ParticlesDistMerged: HDF5_ParticlesDistMerged.cpp 
+	${CPP} -o  ParticlesMergedDist ${INC_HDF5} ${LIB_HDF5} ${HDF5LIBS} HDF5_ParticlesDistMerged.cpp
+
 ProcVDist: ProcVDist.cpp 
 	${CPP} -o  ProcVDist ${INC_HDF5} ${LIB_HDF5} ${HDF5LIBS} ProcVDist.cpp 	
 
