@@ -8,7 +8,7 @@
 
 class Timing;
 
-#ifndef NO_HDF5
+#ifndef NO_MPI
 #include "mpi.h"
 #endif
 #include "ipicfwd.h"

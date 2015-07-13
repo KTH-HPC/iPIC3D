@@ -8,6 +8,7 @@
 #include "TimeTasks.h"
 #include "ipicdefs.h"
 
+
 void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
   const double *b, int m, int max_iter, double tol, Field * field)
 {
@@ -58,6 +59,10 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
     normb = 1.0;
 
   int itr=0;
+  /*//for scaling test
+  max_iter =1;
+  int k = 0;
+  */
   for (itr = 0; itr < max_iter; itr++)
   {
     // r = b - A*x
@@ -67,37 +72,32 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
 
     if (itr == 0) {
       if (is_output_thread())
-        printf("Initial residual: %g norm b vector (source) = %g\n",
-          initial_error, normb);
-        //cout << "Initial residual: " << initial_error << " norm b vector (source) = " << normb << endl;
+        printf("Initial residual: %g norm b vector (source) = %g\n", initial_error, normb);
+
       rho_tol = initial_error * tol;
 
+      // for scaling test, comment out
       if ((initial_error / normb) <= tol) {
         if (is_output_thread())
           printf("GMRES converged without iterations: initial error < tolerance\n");
-          //cout << "GMRES converged without iterations: initial error < tolerance" << endl;
         break;
       }
+      //end of comment out
     }
 
     scale(V[0], r, (1.0 / initial_error), xkrylovlen);
     eqValue(0.0, s, m + 1);
     s[0] = initial_error;
     int k = 0;
+
+    
     while (rho_tol < initial_error && k < m) {
+    //for scaling test, fix to 10 iterations
+    //  while (k < 20) {
 
       // w= A*V(:,k)
       double *w = V[k+1];
       (field->*FunctionImage) (w, V[k]);
-      // old code (many MPI_Allreduce calls)
-      //
-      //const double av = normP(w, xkrylovlen);
-      //for (register int j = 0; j <= k; j++) {
-      //  H[j][k] = dotP(w, V[j], xkrylovlen);
-      //  addscale(-H[j][k], w, V[j], xkrylovlen);
-      //}
-
-      // new code to make a single MPI_Allreduce call
       for (int j = 0; j <= k; j++)
       {
         y[j] = dot(w, V[j], xkrylovlen);
@@ -115,13 +115,6 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
       // Is there a numerically stable way to
       // eliminate this second all-reduce all?
       H[k+1][k] = normP(V[k+1], xkrylovlen);
-      //
-      // check that vectors are orthogonal
-      //
-      //for (register int j = 0; j <= k; j++) {
-      //  dprint(dotP(w, V[j], xkrylovlen));
-      //}
-
       double av = sqrt(y[k+1]);
       // why are we testing floating point numbers
       // for equality?  Is this supposed to say
@@ -178,27 +171,25 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
         xkrylov[i] += yj * Vj[i];
     }
 
+    //comment out for scaling test
     if (initial_error <= rho_tol) {
       if (is_output_thread())
       {
         printf("GMRES converged at restart # %d; iteration #%d with error: %g\n",
           itr, k,  initial_error / rho_tol * tol);
-        //cout << "GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
       }
       break;
     }
     if (is_output_thread() && GMRESVERBOSE)
     {
       printf("Restart: %d error: %g\n", itr,  initial_error / rho_tol * tol);
-      //cout << "Restart: " << itr << " error: " << initial_error / rho_tol * tol << endl;
     }
-
+    //end of comment out
   }
   if(itr==max_iter && is_output_thread())
   {
     printf("GMRES not converged !! Final error: %g\n",
       initial_error / rho_tol * tol);
-    //cout << "GMRES not converged !! Final error: " << initial_error / rho_tol * tol << endl;
   }
 
   delete[]r;

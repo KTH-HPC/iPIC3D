@@ -2067,11 +2067,8 @@ void EMfields3D::calculateE()
   double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
   double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
 
-  double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
-  double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
   // set to zero all the stuff 
   eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-  eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
   eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, divE, nxc, nyc, nzc);
   eqValue(0.0, tempC, nxc, nyc, nzc);
@@ -2080,8 +2077,12 @@ void EMfields3D::calculateE()
   eqValue(0.0, gradPHIZ, nxn, nyn, nzn);
   // Adjust E calculating laplacian(PHI) = div(E) -4*PI*rho DIVERGENCE CLEANING
   if (PoissonCorrection) {
-    if (vct->getCartesian_rank() == 0)
-      cout << "*** DIVERGENCE CLEANING ***" << endl;
+    if (vct->getCartesian_rank() == 0)   cout << "*** DIVERGENCE CLEANING ***" << endl;
+
+    double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+    double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+    eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+
     grid->divN2C(divE, Ex, Ey, Ez);
     scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
     sum(divE, tempC, nxc, nyc, nzc);
@@ -2102,13 +2103,17 @@ void EMfields3D::calculateE()
     sub(Ex, gradPHIX, nxn, nyn, nzn);
     sub(Ey, gradPHIY, nxn, nyn, nzn);
     sub(Ez, gradPHIZ, nxn, nyn, nzn);
+  
+    delete[]xkrylovPoisson;
+    delete[]bkrylovPoisson;
+  } // end of divergence cleaning 
 
-  }                             // end of divergence cleaning 
-  if (vct->getCartesian_rank() == 0)
-    cout << "*** MAXWELL SOLVER ***" << endl;
+  if (vct->getCartesian_rank() == 0) cout << "*** MAXWELL SOLVER ***" << endl;
+
   // prepare the source 
   MaxwellSource(bkrylov);
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
+
   // solver
   GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2),
     bkrylov, 20, 200, GMREStol, this);
@@ -2137,8 +2142,7 @@ void EMfields3D::calculateE()
   // deallocate temporary arrays
   delete[]xkrylov;
   delete[]bkrylov;
-  delete[]xkrylovPoisson;
-  delete[]bkrylovPoisson;
+
 }
 
 /*! Calculate sorgent for Maxwell solver */
@@ -2174,15 +2178,16 @@ void EMfields3D::MaxwellSource(double *bkrylov)
 
   // prepare curl of B for known term of Maxwell solver: for the source term
   grid->curlC2N(tempXN, tempYN, tempZN, Bxc, Byc, Bzc);
+
   scale(temp2X, Jxh, -FourPI / c, nxn, nyn, nzn);
   scale(temp2Y, Jyh, -FourPI / c, nxn, nyn, nzn);
   scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
 
-  // -- dipole SOURCE version using J_ext
+  /* -- dipole SOURCE version using J_ext, This is not initialized, causing program crash over 2048 processes
   addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
   addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
   addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
-  // -- end of dipole SOURCE version using J_ext
+  // -- end of dipole SOURCE version using J_ext */
 
   sum(temp2X, tempXN, nxn, nyn, nzn);
   sum(temp2Y, tempYN, nxn, nyn, nzn);
@@ -2197,10 +2202,12 @@ void EMfields3D::MaxwellSource(double *bkrylov)
   scale(tempX, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempY, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempZ, -delt * delt * FourPI, nxn, nyn, nzn);
+
   // sum E, past values
   sum(tempX, Ex, nxn, nyn, nzn);
   sum(tempY, Ey, nxn, nyn, nzn);
   sum(tempZ, Ez, nxn, nyn, nzn);
+
   // sum curl(B) + jhat part
   sum(tempX, temp2X, nxn, nyn, nzn);
   sum(tempY, temp2Y, nxn, nyn, nzn);
@@ -2228,6 +2235,7 @@ void EMfields3D::MaxwellSource(double *bkrylov)
 
   // physical space -> Krylov space
   phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
+
 }
 
 /*! Mapping of Maxwell image to give to solver */
@@ -3122,6 +3130,7 @@ void EMfields3D::calculateHatFunctions()
   eq(rhoh, tempXC, nxc, nyc, nzc);
   // communicate rhoh
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct, this);
+
 }
 /*! Image of Poisson Solver */
 void EMfields3D::PoissonImage(double *image, double *vector)

@@ -1,3 +1,4 @@
+#ifndef NO_HDF5
 
 #include <mpi.h>
 #include "errors.h"
@@ -753,8 +754,6 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
         d_array_p[i * dj + j] = d_array[i + 1][j + 1][ns];  // I am not writing ghost cells
     write(objname, dimens, d_array_p);
     delete[]d_array_p;
-  //} catch(PSK::Exception & e) {
-  //  e.push("In HDF5OutputAdaptor::write(const_arr3_double array)");
-  //  throw e;
-  //}
 }
+
+#endif

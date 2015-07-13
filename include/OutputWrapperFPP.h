@@ -8,8 +8,10 @@
 // ===
 #include "ipicfwd.h"
 #include "PSKOutput.h"
-#include "PSKhdf5adaptor.h"
 
+#ifndef NO_HDF5
+#include "PSKhdf5adaptor.h"
+#endif
 using namespace PSK;
 
 class OutputWrapperFPP

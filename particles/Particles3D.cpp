@@ -692,12 +692,21 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 #else
 	#pragma omp for schedule(static)
 #endif
+
+  /*//add for scaling test
+  const int    sub_cycles = 5;
+  int cyc_cnt =0, innter = 0;
+  const double dt_sub = dt/double(sub_cycles);
+  double dto2_sub = .5 * dt_sub, qdto2mc_sub = qom*dto2_sub/c;
+  //end of scaling test */
+
   for (pidx = 0; pidx < nop; pidx++) {
 
 	  // copy the particle
 	  SpeciesParticle* pcl = &_pcls[pidx];
 	  ALIGNED(pcl);
 
+	  //comment out for scaling test
 	  //determine # of subcyles
 	  double weights[8] ALLOC_ALIGNED;
 	  int cx,cy,cz;
@@ -713,12 +722,13 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 		Byl += weights[c] * field_components[c][1];
 		Bzl += weights[c] * field_components[c][2];
 	  }
-	  const double B_mag= sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-	  double dt_sub = M_PI*c/(4*abs(qom)*B_mag);
-	  const int sub_cycles = int(dt/dt_sub)+1;
-	  dt_sub = dt/double(sub_cycles);
-	  double dto2_sub = .5 * dt_sub, qdto2mc_sub = qom*dto2_sub/c;
-
+	  const double B_mag   = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+	        double dt_sub  = M_PI*c/(4*abs(qom)*B_mag);
+	  const int sub_cycles = int(dt/dt_sub)+1;	  
+	               dt_sub  = dt/double(sub_cycles);
+	  const double dto2_sub= .5 * dt_sub;
+	  const double qdto2mc_sub = qom*dto2_sub/c;
+	  //end of scaling test
 #ifdef PRINTPCL
 	  subcycle_sum += sub_cycles;
 	  double innter_avg = 0.0;
@@ -727,8 +737,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  //start subcycling
 	  for(int cyc_cnt=0;cyc_cnt<sub_cycles;cyc_cnt++)
 	  {
-
-		    const double xorig = pcl->get_x();
+	    const double xorig = pcl->get_x();
        	    const double yorig = pcl->get_y();
        	    const double zorig = pcl->get_z();
        	    const double uorig = pcl->get_u();
@@ -749,6 +758,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 
             // calculate the average velocity iteratively
             while(currErr> PC_err*PC_err &&  innter < NiterMover){
+            //while( innter < NiterMover){ //for scaling test , use fixed iteration
 
 				  // Save old v_avg
 				  uavg_old = uavg;
@@ -874,6 +884,12 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 		  cout << "*** Relativistic AoS MOVER with Subcycling  species " << ns << " ***" 
 		  << globalAvgArr[0]/MPIdata::get_nprocs()  << " subcyles ***" << globalAvgArr[1]/MPIdata::get_nprocs()<< " ITERATIONS   ****" << endl;
 #endif
+  
+	  /*//for scaling test
+	  if (MPIdata::get_rank() == 0)
+	    cout << "*** Relativistic AoS MOVER with Subcycling species " << ns << " ***"
+		 << cyc_cnt  << " subcyles ***" << innter << " ITERATIONS   ****" << endl;
+	  */
   }
 }
 }
@@ -1649,7 +1665,7 @@ void Particles3D::repopulate_particles()
     int zend = nzc-2;
     if (repopulateXleft)
     {
-      cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
+      //cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
   
       for (int i=1; i<= num_layers; i++)
       for (int j=ybeg; j<=yend; j++)
@@ -1663,7 +1679,7 @@ void Particles3D::repopulate_particles()
     }
     if (repopulateXrght)
     {      
-      cout << "*** Repopulate Xright species " << ns << " ***" << endl;
+      //cout << "*** Repopulate Xright species " << ns << " ***" << endl;
       for (int i=upXstart; i<=xend; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)
@@ -1908,7 +1924,7 @@ void Particles3D::openbc_particles_outflow()
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
     if(apply_openBC[dir_cnt]){
-    	  dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
+      //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
 
 		  int pidx = 0;
 		  int direction = dir_cnt/2;

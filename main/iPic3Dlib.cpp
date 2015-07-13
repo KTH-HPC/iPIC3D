@@ -159,7 +159,7 @@ int c_Solver::Init(int argc, char **argv) {
       part[i].reserve_remaining_particle_IDs();
     }
   }
-
+ 
   //allocate test particles if any
   nstestpart = col->getNsTestPart();
   if(nstestpart>0){
