@@ -121,13 +121,13 @@ namespace iPic3D {
 	MPI_Request fieldreqArr[4];//E+B+Je+Ji
 	MPI_File    fieldfhArr[4];
 	MPI_Status  fieldstsArr[4];
-	int fieldreqcounter=0;
+	int fieldreqcounter;
 
   	float*** momentwritebuffer;
 	MPI_Request momentreqArr[14];//rho+PXX+PXY+PXZ++PYY+PYZ+PZZ for species0,1
 	MPI_File    momentfhArr[14];
 	MPI_Status  momentstsArr[14];
-	int momentreqcounter=0;
+	int momentreqcounter;
 
   };
 
