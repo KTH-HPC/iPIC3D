@@ -188,6 +188,8 @@ int c_Solver::Init(int argc, char **argv) {
 				  momentwritebuffer=newArr3(float,(grid->getNZN()-3), grid->getNYN()-3, grid->getNXN()-3);
 		  }
 		  else if(col->getWriteMethod()=="nbcvtk"){
+		    momentreqcounter=0;
+		    fieldreqcounter = 0;
 			  if(!(col->getFieldOutputTag()).empty())
 				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3)*4,grid->getNYN()-3,grid->getNXN()-3,3);
 			  if(!(col->getMomentsOutputTag()).empty())

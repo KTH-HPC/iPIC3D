@@ -795,6 +795,9 @@ void Collective::read_field_restart(
     arr3_double Ex, arr3_double Ey, arr3_double Ez,
     array4_double* rhons_, int ns)const
 {
+#ifdef NO_HDF5
+  eprintf("Require HDF5 to read from restart file.");
+#else
     const int nxn = grid->getNXN();
     const int nyn = grid->getNYN();
     const int nzn = grid->getNZN();
@@ -926,6 +929,7 @@ void Collective::read_field_restart(
     // close the hdf file
     status = H5Fclose(file_id);
     delete[]temp_storage;
+#endif
 }
 
 // extracted from Particles3Dcomm.cpp
@@ -942,6 +946,9 @@ void Collective::read_particles_restart(
     vector_double& z,
     vector_double& t)const
 {
+#ifdef NO_HDF5
+  eprintf("Require HDF5 to read from restart file.");
+#else
     if (vct->getCartesian_rank() == 0 && species_number == 0)
     {
       printf("LOADING PARTICLES FROM RESTART FILE in %s/restart.hdf\n",
@@ -1063,6 +1070,7 @@ void Collective::read_particles_restart(
     }
 
     status = H5Fclose(file_id);
+#endif
 }
 
 

@@ -2180,11 +2180,11 @@ void EMfields3D::MaxwellSource(double *bkrylov)
   scale(temp2Y, Jyh, -FourPI / c, nxn, nyn, nzn);
   scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
 
-  // -- dipole SOURCE version using J_ext
+  /* -- dipole SOURCE version using J_ext,This is not initialized, causing program crash over 2048 processes
   addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
   addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
   addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
-  // -- end of dipole SOURCE version using J_ext
+  // -- end of dipole SOURCE version using J_ext*/
 
   sum(temp2X, tempXN, nxn, nyn, nzn);
   sum(temp2Y, tempYN, nxn, nyn, nzn);
@@ -2473,8 +2473,8 @@ void EMfields3D::smooth(arr3_double vector, int type)
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
           for (int k = 1; k < nz - 1; k++)
-            //temp[i][j][k] = alpha * vector[i][j][k] + beta3D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
-      	    temp[i][j][k] = alpha * vector[i][j][k] + beta2D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+            temp[i][j][k] = alpha * vector[i][j][k] + beta3D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+          //temp[i][j][k] = alpha * vector[i][j][k] + beta2D * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
 
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
@@ -2518,8 +2518,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            //temp[i][j][k] = alpha * Ex[i][j][k] + beta3D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
-      	    temp[i][j][k] = alpha * Ex[i][j][k] + beta2D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ex[i][j][k] + beta3D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+      	    //temp[i][j][k] = alpha * Ex[i][j][k] + beta2D * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -2529,8 +2529,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            //temp[i][j][k] = alpha * Ey[i][j][k] + beta3D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
-      	    temp[i][j][k] = alpha * Ey[i][j][k] + beta2D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ey[i][j][k] + beta3D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+      //temp[i][j][k] = alpha * Ey[i][j][k] + beta2D * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -2540,8 +2540,8 @@ void EMfields3D::smoothE()
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
-            //temp[i][j][k] = alpha * Ez[i][j][k] + beta3D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
-      	  temp[i][j][k] = alpha * Ez[i][j][k] + beta2D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+            temp[i][j][k] = alpha * Ez[i][j][k] + beta3D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+      //temp[i][j][k] = alpha * Ez[i][j][k] + beta2D * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
 
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nyn - 1; j++)
@@ -4136,30 +4136,15 @@ void EMfields3D::initDipole()
             y_displ = y - yc;
             z_displ = z - zc;
             fac1 =  -B1z*a*a*a/pow(r2,2.5);
-//			loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
-//			Bx_ext[i][j][k]  = blp[0];
-//			By_ext[i][j][k]  = blp[1];
-//			Bz_ext[i][j][k]  = blp[2];
-//			loopX(blp, x, y, z, a, xc, yc, zc, B1x);
-//			Bx_ext[i][j][k] += blp[0];
-//			By_ext[i][j][k] += blp[1];
-//			Bz_ext[i][j][k] += blp[2];
-//			loopY(blp, x, y, z, a, xc, yc, zc, B1y);
-//			Bx_ext[i][j][k] += blp[0];
-//			By_ext[i][j][k] += blp[1];
-//			Bz_ext[i][j][k] += blp[2];
-
-			Bx_ext[i][j][k] = 3*x_displ*z_displ*fac1;
-			By_ext[i][j][k] = 3*y_displ*z_displ*fac1;
-			Bz_ext[i][j][k] = (2*z_displ*z_displ -x_displ*x_displ -y_displ*y_displ)*fac1;
-
+	    Bx_ext[i][j][k] = 3*x_displ*z_displ*fac1;
+	    By_ext[i][j][k] = 3*y_displ*z_displ*fac1;
+	    Bz_ext[i][j][k] = (2*z_displ*z_displ -x_displ*x_displ -y_displ*y_displ)*fac1;
         }
         else { // no field inside the planet
             Bx_ext[i][j][k]  = 0.0;
             By_ext[i][j][k]  = 0.0;
             Bz_ext[i][j][k]  = 0.0;
         }
-
         Bxn[i][j][k] = B0x;// + Bx_ext[i][j][k]
         Byn[i][j][k] = B0y;// + By_ext[i][j][k]
         Bzn[i][j][k] = B0z;// + Bz_ext[i][j][k]
@@ -4727,13 +4712,13 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
 {
   const VirtualTopology3D *vct = &get_vct();
 
-  if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
+  if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2 && nx>10) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
           
 	vectorX[0][j][k] = B0x;
-    vectorY[0][j][k] = B0y;
-    vectorZ[0][j][k] = B0z;
+        vectorY[0][j][k] = B0y;
+        vectorZ[0][j][k] = B0z;
 
 	vectorX[1][j][k] = B0x;
 	vectorY[1][j][k] = B0y;
@@ -4750,73 +4735,117 @@ void EMfields3D::OpenBoundaryInflowB(arr3_double vectorX, arr3_double vectorY, a
       }
   }
 
-  if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
+  if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2 && nx>10 ) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
 
         vectorX[nx-4][j][k] = vectorX[nx-5][j][k];
-        vectorY[nx-4][j][k] = 0.0;
+        vectorY[nx-4][j][k] = vectorY[nx-5][j][k];
         vectorZ[nx-4][j][k] = vectorZ[nx-5][j][k];
 
         vectorX[nx-3][j][k] = vectorX[nx-5][j][k];
-        vectorY[nx-3][j][k] = 0.0;
+        vectorY[nx-3][j][k] = vectorY[nx-5][j][k];
         vectorZ[nx-3][j][k] = vectorZ[nx-5][j][k];
 
         vectorX[nx-2][j][k] = vectorX[nx-5][j][k];
-        vectorY[nx-2][j][k] = 0.0;
+        vectorY[nx-2][j][k] = vectorY[nx-5][j][k];
         vectorZ[nx-2][j][k] = vectorZ[nx-5][j][k];
 
         vectorX[nx-1][j][k] = vectorX[nx-5][j][k];
-        vectorY[nx-1][j][k] = 0.0;
+        vectorY[nx-1][j][k] = vectorY[nx-5][j][k];
         vectorZ[nx-1][j][k] = vectorZ[nx-5][j][k];
       }
   }
 
-  if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
+  if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2 && ny> 10)  {
+    for (int i=0; i < nx;i++)
+      for (int k=0; k < nz;k++){
+
+    	  vectorX[i][0][k] = vectorX[i][4][k];
+    	  vectorY[i][0][k] = vectorY[i][4][k];
+    	  vectorZ[i][0][k] = vectorZ[i][4][k];
+
+    	  vectorX[i][1][k] = vectorX[i][4][k];
+    	  vectorY[i][1][k] = vectorY[i][4][k];
+    	  vectorZ[i][1][k] = vectorZ[i][4][k];
+
+    	  vectorX[i][2][k] = vectorX[i][4][k];
+    	  vectorY[i][2][k] = vectorY[i][4][k];
+    	  vectorZ[i][2][k] = vectorZ[i][4][k];
+
+    	  vectorX[i][3][k] = vectorX[i][4][k];
+    	  vectorY[i][3][k] = vectorY[i][4][k];
+    	  vectorZ[i][3][k] = vectorZ[i][4][k];
+      } 
+  }
+
+  if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright==2 && ny>10)  {
+    for (int i=0; i < nx;i++)
+      for (int k=0; k< nz;k++){
+
+    	vectorX[i][ny-4][k] = vectorX[i][ny-5][k];
+        vectorY[i][ny-4][k] = vectorY[i][ny-5][k];
+        vectorZ[i][ny-4][k] = vectorZ[i][ny-5][k];
+
+        vectorX[i][ny-3][k] = vectorX[i][ny-5][k];
+        vectorY[i][ny-3][k] = vectorY[i][ny-5][k];
+        vectorZ[i][ny-3][k] = vectorZ[i][ny-5][k];
+
+        vectorX[i][ny-2][k] = vectorX[i][ny-5][k];
+        vectorY[i][ny-2][k] = vectorY[i][ny-5][k];
+        vectorZ[i][ny-2][k] = vectorZ[i][ny-5][k];
+
+        vectorX[i][ny-1][k] = vectorX[i][ny-5][k];
+        vectorY[i][ny-1][k] = vectorY[i][ny-5][k];
+        vectorZ[i][ny-1][k] = vectorZ[i][ny-5][k];
+      }
+  }
+
+  if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2 && nz > 10)  {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
 
     	  vectorX[i][j][0] = vectorX[i][j][4];
-    	  vectorY[i][j][0] = 0.0;
+    	  vectorY[i][j][0] = vectorY[i][j][4];
     	  vectorZ[i][j][0] = vectorZ[i][j][4];
 
     	  vectorX[i][j][1] = vectorX[i][j][4];
-    	  vectorY[i][j][1] = 0.0;
+    	  vectorY[i][j][1] = vectorY[i][j][4];
     	  vectorZ[i][j][1] = vectorZ[i][j][4];
 
     	  vectorX[i][j][2] = vectorX[i][j][4];
-    	  vectorY[i][j][2] = 0.0;
+    	  vectorY[i][j][2] = vectorY[i][j][4];
     	  vectorZ[i][j][2] = vectorZ[i][j][4];
 
     	  vectorX[i][j][3] = vectorX[i][j][4];
-    	  vectorY[i][j][3] = 0.0;
+    	  vectorY[i][j][3] = vectorY[i][j][4];
     	  vectorZ[i][j][3] = vectorZ[i][j][4];
 
       } 
   }
 
-  if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
+  if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2 && nz>10)  {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
 
-    	  vectorX[i][j][nz-4] = vectorX[i][j][nz-5];
-        vectorY[i][j][nz-4] = 0.0;
+    	vectorX[i][j][nz-4] = vectorX[i][j][nz-5];
+        vectorY[i][j][nz-4] = vectorY[i][j][nz-5];
         vectorZ[i][j][nz-4] = vectorZ[i][j][nz-5];
 
         vectorX[i][j][nz-3] = vectorX[i][j][nz-5];
-        vectorY[i][j][nz-3] = 0.0;
+        vectorY[i][j][nz-3] = vectorY[i][j][nz-5];
         vectorZ[i][j][nz-3] = vectorZ[i][j][nz-5];
 
         vectorX[i][j][nz-2] = vectorX[i][j][nz-5];
-        vectorY[i][j][nz-2] = 0.0;
+        vectorY[i][j][nz-2] = vectorY[i][j][nz-5];
         vectorZ[i][j][nz-2] = vectorZ[i][j][nz-5];
 
         vectorX[i][j][nz-1] = vectorX[i][j][nz-5];
-        vectorY[i][j][nz-1] = 0.0;
+        vectorY[i][j][nz-1] = vectorY[i][j][nz-5];
         vectorZ[i][j][nz-1] = vectorZ[i][j][nz-5];
       }
-
   }
+
   /*
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
     for (int j=0; j < ny;j++)
