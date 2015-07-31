@@ -1,7 +1,6 @@
 
 #include <mpi.h>
 #include "WriteOutputParallel.h"
-#include "phdf5.h"
 #include "CollectiveIO.h"
 #include "Grid3DCU.h"
 #include "EMfields3D.h"

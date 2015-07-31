@@ -226,7 +226,7 @@ void Particles3D::maxwellian(Field * EMf)
 void Particles3D::pitch_angle_energy(Field * EMf) {
 
     /* initialize random generator with different seed on different processor */
-    srand(vct->getCartesian_rank()+2);
+    srand(vct->getCartesian_rank() + 3 + ns);
     assert_eq(_pcls.size(),0);
 
     double p0, pperp0, gyro_phase;
@@ -664,7 +664,6 @@ void Particles3D::mover_PC_AoS(Field * EMf)
   }                             // END OF ALL THE PARTICLES
 }
 }
-
 
 
 void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
@@ -1552,14 +1551,14 @@ void Particles3D::repopulate_particles()
   using namespace BCparticles;
 
   // if this is not a boundary process then there is nothing to do
-  if(!vct->isBoundaryProcess()) return;
+  if(!vct->isBoundaryProcess_P()) return;
 
   // if there are no reemission boundaries then no one has anything to do
-  const bool repop_bndry_in_X = !vct->getPERIODICX() &&
+  const bool repop_bndry_in_X = !vct->getPERIODICX_P() &&
         (bcPfaceXleft == REEMISSION || bcPfaceXright == REEMISSION);
-  const bool repop_bndry_in_Y = !vct->getPERIODICY() &&
+  const bool repop_bndry_in_Y = !vct->getPERIODICY_P() &&
         (bcPfaceYleft == REEMISSION || bcPfaceYright == REEMISSION);
-  const bool repop_bndry_in_Z = !vct->getPERIODICZ() &&
+  const bool repop_bndry_in_Z = !vct->getPERIODICZ_P() &&
         (bcPfaceZleft == REEMISSION || bcPfaceZright == REEMISSION);
   const bool repopulation_boundary_exists =
         repop_bndry_in_X || repop_bndry_in_Y || repop_bndry_in_Z;
@@ -1569,12 +1568,12 @@ void Particles3D::repopulate_particles()
 
   // boundaries to repopulate
   //
-  const bool repopulateXleft = (vct->noXleftNeighbor() && bcPfaceXleft == REEMISSION);
-  const bool repopulateYleft = (vct->noYleftNeighbor() && bcPfaceYleft == REEMISSION);
-  const bool repopulateZleft = (vct->noZleftNeighbor() && bcPfaceZleft == REEMISSION);
-  const bool repopulateXrght = (vct->noXrghtNeighbor() && bcPfaceXright == REEMISSION);
-  const bool repopulateYrght = (vct->noYrghtNeighbor() && bcPfaceYright == REEMISSION);
-  const bool repopulateZrght = (vct->noZrghtNeighbor() && bcPfaceZright == REEMISSION);
+  const bool repopulateXleft = (vct->noXleftNeighbor_P() && bcPfaceXleft == REEMISSION);
+  const bool repopulateYleft = (vct->noYleftNeighbor_P() && bcPfaceYleft == REEMISSION);
+  const bool repopulateZleft = (vct->noZleftNeighbor_P() && bcPfaceZleft == REEMISSION);
+  const bool repopulateXrght = (vct->noXrghtNeighbor_P() && bcPfaceXright == REEMISSION);
+  const bool repopulateYrght = (vct->noYrghtNeighbor_P() && bcPfaceYright == REEMISSION);
+  const bool repopulateZrght = (vct->noZrghtNeighbor_P() && bcPfaceZright == REEMISSION);
   const bool do_repopulate = 
        repopulateXleft || repopulateYleft || repopulateZleft
     || repopulateXrght || repopulateYrght || repopulateZrght;
@@ -1650,7 +1649,6 @@ void Particles3D::repopulate_particles()
     if (repopulateXleft)
     {
       //cout << "*** Repopulate Xleft species " << ns << " ***" << endl;
-  
       for (int i=1; i<= num_layers; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)
@@ -1663,7 +1661,7 @@ void Particles3D::repopulate_particles()
     }
     if (repopulateXrght)
     {      
-      //cout << "*** Repopulate Xright species " << ns << " ***" << endl;
+      cout << "*** Repopulate Xright species " << ns << " ***" << endl;
       for (int i=upXstart; i<=xend; i++)
       for (int j=ybeg; j<=yend; j++)
       for (int k=zbeg; k<=zend; k++)
@@ -1737,23 +1735,152 @@ void Particles3D::repopulate_particles()
 // Open BC for particles: duplicate particles on the boundary,.
 // shift outside the box and update location to test if inside box
 // if so, add to particle list
-void Particles3D::openbc_particles()
+void Particles3D::openbc_particles_inflow()
 {
-  // if this is not a boundary process then there is nothing to do
+  eprintf("openbc_particles_inflow has not yet been implemented");
+
+/*
   if(!vct->isBoundaryProcess()) return;
 
   using namespace BCparticles;
+  //This is a hack here to test injection on XLeft
+  if(!vct->getPERIODICX() && vct->noXleftNeighbor() && bcPfaceXleft == OPENBCIn){
 
-  const bool openXleft = !vct->getPERIODICX() && vct->noXleftNeighbor() &&  bcPfaceXleft == OPENBC;
-  const bool openYleft = !vct->getPERIODICY() && vct->noYleftNeighbor() &&  bcPfaceYleft == OPENBC;
-  const bool openZleft = !vct->getPERIODICZ() && vct->noZleftNeighbor() &&  bcPfaceZleft == OPENBC;
+	dprintf( "******  Inflow OpenBC ******");
+    int delpcl = 0;
+    double delq=0.0;
 
-  const bool openXright = !vct->getPERIODICX() && vct->noXrghtNeighbor() && bcPfaceXright == OPENBC;
-  const bool openYright = !vct->getPERIODICY() && vct->noYrghtNeighbor() && bcPfaceYright == OPENBC;
-  const bool openZright = !vct->getPERIODICZ() && vct->noZrghtNeighbor() && bcPfaceZright == OPENBC;
+    //delete those exiting particles
+    int pidx = 0;
+    double pclX, pclY, pclZ;
+    while(pidx < getNOP()){
+      SpeciesParticle& pcl = _pcls[pidx];
+      pclX= pcl.get_x();
+      pclY= pcl.get_y();
+      pclZ= pcl.get_z();
+      if( pclX < 0 || pclX > Lx  || pclY < 0 || pclY > Ly || pclZ < 0 || pclZ > Lz){
+	delpcl ++;
+	delq += pcl.get_q();
+	delete_particle(pidx);
+      }else
+	pidx ++;
+    }
+
+    dprintf("delete %d pcl, %f charges, now NOP=%d",delpcl,delq,getNOP());
+    const int newpartStartID = getNOP();
+
+    //Create Maxwellian Uniformly distributed particles
+    srand(vct->getCartesian_rank() + time(0) + ns);dprintf("Seed =%d",vct->getCartesian_rank() + time(0) + ns);
+    const double FourPI = 16*atan(1.0);
+    const double q_sgn  = (qom / fabs(qom));
+    const double InjCellx = Vinj * dt; dprintf("Vinj=%f, dt=%f, InjCellx=%f",Vinj,dt,InjCellx);
+    //const double InjVol   = InjCellx*(dy*(grid->getNYC()-2))*(dz*(grid->getNZC()-2));
+    const double InjVol   = grid->getVOL()*InjCellx/dx;
+    const double q_tot_particle =  q_sgn*col->getRHOinit(ns)/FourPI*InjVol;
+    //const double q_tot_particle =  delq;
+    const double q_per_particle =  q_sgn*col->getRHOinit(ns)/FourPI*InjVol/npcel;
+    dprintf("q_tot_particle=%f, q_per_particle=%f",q_tot_particle,q_per_particle);
+
+    int nop_inject=0;
+    double q_inject = 0.0;
+    const double InjCellStartX = 0.0-InjCellx;
+    const double invRandMax = 1.0/double(RAND_MAX);
+
+
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++){
+
+    	/*
+    	//The below is uniformly distributed in location
+		for (int ii=0; ii < npcelx; ii++)
+		  for (int jj=0; jj < npcely; jj++)
+			for (int kk=0; kk < npcelz; kk++){
+
+			  double u,v,w,x,y,z;
+			  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
+			  //dprintf("sample_maxwellian %f, %f, %f, %f, %f, %f,%f,%f,%f)",u,v,w,uth, vth, wth,u0, v0, w0);
+
+			  //Uniform distribution
+			  x = (ii + .5) * (InjCellx / npcelx) + InjCellStartX;
+			  y = (jj + .5) * (dy / npcely) + grid->getYN(1, j, k);
+			  z = (kk + .5) * (dz / npcelz) + grid->getZN(1, j, k);
+
+			  //check location after one time step
+			  x += u*dt;
+			  y += v*dt;
+			  z += w*dt;
+
+			  //Add particle if it enters the domain box
+			  //here may need communicating those exiting particles
+			  if( x>0 && x<Lx && y>0 && y<Ly && z>0 && z<Lz){
+				create_new_particle(u,v,w,q_per_particle,x,y,z);
+				nop_inject ++;
+				q_inject += q_per_particle;
+			  }
+		}
+
+		//The below is randomly distributed in location
+		for (int pclid=0; pclid < npcel; pclid++){
+
+		  double u,v,w,x,y,z;
+		  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
+
+		  x = InjCellStartX		   + (rand()*invRandMax)*InjCellx;
+		  y = grid->getYN(1, j, k) + (rand()*invRandMax)*dy;
+		  z = grid->getZN(1, j, k) + (rand()*invRandMax)*dz;
+
+		  //check location after one time step
+		  x += u*dt;
+		  y += v*dt;
+		  z += w*dt;
+
+		  //Add particle if it enters the domain box
+		  //here may need communicating those exiting particles
+		  if( x>0 && x<Lx && y>0 && y<Ly && z>0 && z<Lz){
+			create_new_particle(u,v,w,q_tot_particle,x,y,z);
+			nop_inject ++;
+			q_inject += q_per_particle;
+		  }
+		}
+
+     }
+      
+     //the below part is for dividing over the number of entering particles
+      const int newnop = getNOP();
+      q_inject=0.0;
+      for(int startid=newpartStartID;startid<newnop;startid++){
+          SpeciesParticle& pcl = _pcls[startid];
+          pcl.fetch_q() /= nop_inject;
+          q_inject += pcl.get_q();
+	  	  if(startid==newpartStartID) dprintf("x, y,z, u, v, w, q=%f,%f,%f,%f,%f,%f,%f",pcl.get_x(),pcl.get_y(),pcl.get_z(),pcl.get_u(),pcl.get_v(),pcl.get_w(),pcl.get_q());
+      }
+
+      dprintf("create %d species %d  pcl,  now NOP= %d , inject Q=%f" ,nop_inject, ns, getNOP(),q_inject);
+   
+  }//end of injecting from Xleft
+  */
+}
+
+// Open BC for particles: duplicate particles on the boundary,.
+// shift outside the box and update location to test if inside box
+// if so, add to particle list
+void Particles3D::openbc_particles_outflow()
+{
+  // if this is not a boundary process then there is nothing to do
+  if(!vct->isBoundaryProcess_P()) return;
+
+  //The below is OpenBC outflow for all other boundaries
+  using namespace BCparticles;
+
+  const bool openXleft = !vct->getPERIODICX_P() && vct->noXleftNeighbor_P() &&  bcPfaceXleft == OPENBCOut;
+  const bool openYleft = !vct->getPERIODICY_P() && vct->noYleftNeighbor_P() &&  bcPfaceYleft == OPENBCOut;
+  const bool openZleft = !vct->getPERIODICZ_P() && vct->noZleftNeighbor_P() &&  bcPfaceZleft == OPENBCOut;
+
+  const bool openXright = !vct->getPERIODICX_P() && vct->noXrghtNeighbor_P() && bcPfaceXright == OPENBCOut;
+  const bool openYright = !vct->getPERIODICY_P() && vct->noYrghtNeighbor_P() && bcPfaceYright == OPENBCOut;
+  const bool openZright = !vct->getPERIODICZ_P() && vct->noZrghtNeighbor_P() && bcPfaceZright == OPENBCOut;
 
   if(!openXleft && !openYleft && !openZleft && !openXright && !openYright && !openZright)  return;
-  
 
   const int num_layers = 3;
   assert_gt(nxc-2, (openXleft+openXright)*num_layers); //excluding 2 ghost cells, #of cells should be larger than total # of openBC layers
@@ -1779,7 +1906,7 @@ void Particles3D::openbc_particles()
   for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
 
     if(apply_openBC[dir_cnt]){
-   //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
+    	  //dprintf( "*** OpenBC for Direction %d on particle species %d",dir_cnt, ns);
 
 		  int pidx = 0;
 		  int direction = dir_cnt/2;
@@ -1831,8 +1958,58 @@ void Particles3D::openbc_particles()
 
   for(int outId=0;outId<nop_created;outId++)
 	  _pcls.push_back(injpcls[outId]);
+}
 
-  
+//Simply delete exiting test particles if openBC
+void Particles3D::openbc_delete_testparticles()
+{
+  // if this is not a boundary process then there is nothing to do
+  if(!vct->isBoundaryProcess_P()) return;
+
+  //The below is OpenBC outflow for all other boundaries
+  using namespace BCparticles;
+
+  const bool openXleft = !vct->getPERIODICX_P() && vct->noXleftNeighbor_P() &&  (bcPfaceXleft == OPENBCOut||bcPfaceXleft == REEMISSION);
+  const bool openYleft = !vct->getPERIODICY_P() && vct->noYleftNeighbor_P() &&  (bcPfaceYleft == OPENBCOut||bcPfaceYleft == REEMISSION);
+  const bool openZleft = !vct->getPERIODICZ_P() && vct->noZleftNeighbor_P() &&  (bcPfaceZleft == OPENBCOut||bcPfaceZleft == REEMISSION);
+
+  const bool openXright = !vct->getPERIODICX_P() && vct->noXrghtNeighbor_P() && (bcPfaceXright == OPENBCOut||bcPfaceXright == REEMISSION);
+  const bool openYright = !vct->getPERIODICY_P() && vct->noYrghtNeighbor_P() && (bcPfaceYright == OPENBCOut||bcPfaceYright == REEMISSION);
+  const bool openZright = !vct->getPERIODICZ_P() && vct->noZrghtNeighbor_P() && (bcPfaceZright == OPENBCOut||bcPfaceZright == REEMISSION);
+  //dprintf( "Entered openbc_delete_testparticles %d %d %d %d %d %d", openXleft,openXright,openYleft,openYright,openZleft,openZright);
+  if(!openXleft && !openYleft && !openZleft && !openXright && !openYright && !openZright)  return;
+
+  const bool   apply_openBC[6]    = {openXleft, openXright,openYleft, openYright,openZleft, openZright};
+  const double delete_boundary[6] = {0, Lx,0, Ly,0, Lz};
+
+  for(int dir_cnt=0;dir_cnt<6;dir_cnt++){
+
+    if(apply_openBC[dir_cnt]){
+
+		  int pidx = 0;
+		  int delnop = 0;
+		  int direction = dir_cnt/2;
+		  double delbry  = delete_boundary[dir_cnt];
+		  double location;
+		  while(pidx < getNOP())
+		  {
+		     SpeciesParticle& pcl = _pcls[pidx];
+		     location = pcl.get_x(direction);
+
+		     // delete the exiting particle if out of box on the direction of OpenBC
+		     if((dir_cnt%2==0 && location<delbry) ||(dir_cnt%2==1 && location>delbry)){
+		    	 delete_particle(pidx);
+		    	 delnop++;
+		     }
+		     else {
+		    	 pidx ++;
+		     }
+		   }
+		  dprintf( "*** Delete %d Test Particle for OpenBC for Direction %d on particle species %d",delnop, dir_cnt, ns);
+	  }
+
+  }
+
 }
 
 
@@ -2036,3 +2213,22 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
   return(Q_removed);
 }
 
+double Particles3D::deleteParticlesInsideSphere2DPlaneXZ(double R, double x_center, double z_center)
+{
+  int pidx = 0;
+  double Q_removed=0.;
+  while (pidx < _pcls.size())
+  {
+    SpeciesParticle& pcl = _pcls[pidx];
+    double xd = pcl.get_x() - x_center;
+    double zd = pcl.get_z() - z_center;
+
+    if ( (xd*xd+zd*zd) < R*R ){
+      Q_removed += pcl.get_q();
+      delete_particle(pidx);
+    } else {
+      pidx++;
+    }
+  }
+  return(Q_removed);
+}

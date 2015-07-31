@@ -89,7 +89,6 @@ public:
 
  public:
   void convertParticlesToSynched();
-  void bufferTestParticlesToSynched();
   void convertParticlesToAoS();
   void convertParticlesToSoA();
   bool particlesAreSoA()const;
@@ -149,6 +148,7 @@ public:
   ParticleType::Type get_particleType()const { return particleType; }
   const SpeciesParticle& get_pcl(int pidx)const{ return _pcls[pidx]; }
   const vector_SpeciesParticle& get_pcl_list()const{ return _pcls; }
+  const SpeciesParticle* get_pclptr(int id)const{ return &(_pcls[id]); }
   const double *getUall()  const { assert(particlesAreSoA()); return &u[0]; }
   const double *getVall()  const { assert(particlesAreSoA()); return &v[0]; }
   const double *getWall()  const { assert(particlesAreSoA()); return &w[0]; }
@@ -235,7 +235,7 @@ public:
 protected:
   // pointers to topology and grid information
   // (should be const)
-  //
+  const Collective * col;
   const VirtualTopology3D * vct;
   const Grid * grid;
   //

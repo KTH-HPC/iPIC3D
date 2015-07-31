@@ -8,7 +8,7 @@
 
 class Timing;
 
-#ifndef NO_HDF5
+#ifndef NO_MPI
 #include "mpi.h"
 #endif
 #include "ipicfwd.h"
@@ -65,8 +65,6 @@ namespace iPic3D {
     void convertParticlesToSoA();
     void convertParticlesToAoS();
     void convertParticlesToSynched();
-    void flushFullBuffer(int cycle);
-    void bufferTestParticlesToSynched();
     void sortParticles();
 
   private:
@@ -109,6 +107,28 @@ namespace iPic3D {
     double Benergy;
     double TOTenergy;
     double TOTmomentum;
+
+    //the below used for IO
+    MPI_Request *headerReq;
+    MPI_Request *dataReq;
+    MPI_Request *footReq;
+    float *testpclPos;
+    int    pclbuffersize;
+    float *testpclVel;
+    MPI_File fh;
+  	MPI_Status*  status;
+  	float**** fieldwritebuffer;
+	MPI_Request fieldreqArr[4];//E+B+Je+Ji
+	MPI_File    fieldfhArr[4];
+	MPI_Status  fieldstsArr[4];
+	int fieldreqcounter;
+
+  	float*** momentwritebuffer;
+	MPI_Request momentreqArr[14];//rho+PXX+PXY+PXZ++PYY+PYZ+PZZ for species0,1
+	MPI_File    momentfhArr[14];
+	MPI_Status  momentstsArr[14];
+	int momentreqcounter;
+
   };
 
 }

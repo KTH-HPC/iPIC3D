@@ -12,7 +12,9 @@
 #include "InterfaceFluid.h"
 #endif
 #include <string>
-
+#include "VCtopology3D.h"
+#include "Grid3DCU.h"
+#include "aligned_vector.h"
 //#include "CollectiveIO.h"
 class ConfigFile;
 using namespace std;
@@ -46,6 +48,13 @@ class Collective
     void ReadInput(string inputfile);
     /*! read the restart input file from HDF5 */
     int ReadRestart(string inputfile);
+
+    void read_field_restart(const VCtopology3D* vct,const Grid* grid,arr3_double Bxn, arr3_double Byn, arr3_double Bzn,
+    						arr3_double Ex, arr3_double Ey, arr3_double Ez,array4_double* rhons_, int ns)const;
+
+    void read_particles_restart(const VCtopology3D* vct,int species_number,vector_double& u,vector_double& v,vector_double& w,
+    							vector_double& q,vector_double& x,vector_double& y,vector_double& z,vector_double& t)const;
+
     void init_derived_parameters();
     /*! Print physical parameters */
     void Print();
@@ -71,6 +80,9 @@ class Collective
     bool getPERIODICX()const{ return (PERIODICX); }
     bool getPERIODICY()const{ return (PERIODICY); }
     bool getPERIODICZ()const{ return (PERIODICZ); }
+    bool getPERIODICX_P()const{ return (PERIODICX_P); }
+    bool getPERIODICY_P()const{ return (PERIODICY_P); }
+    bool getPERIODICZ_P()const{ return (PERIODICZ_P); }
     double getDx()const{ return (dx); }
     double getDy()const{ return (dy); }
     double getDz()const{ return (dz); }
@@ -82,6 +94,7 @@ class Collective
     double getImplSusceptTime()const{ return ImplSusceptTime; }
     int getImplSusceptMode()const{ return ImplSusceptMode; }
     double getSmooth()const{ return (Smooth); }
+    int    getSmoothNiter()const{return SmoothNiter;}
     int getNcycles()const{ return (ncycles); }
     int getNs()const{ return (ns); }
     int getNsTestPart()const{ return (nstestpart); }
@@ -141,6 +154,9 @@ class Collective
     string getCase()const{ return (Case); }
     string getSimName()const{ return (SimName); }
     string getWriteMethod()const{ return (wmethod); }
+    string getFieldOutputTag()const{return FieldOutputTag;}
+    string getMomentsOutputTag()const{return MomentsOutputTag;}
+    string getPclOutputTag()const{return ParticlesOutputTag;}
     string getPoissonCorrection()const{ return (PoissonCorrection); }
     int getLast_cycle()const{ return (last_cycle); }
     double getVinj()const{ return (Vinj); }
@@ -187,6 +203,7 @@ class Collective
     //
     /*! Smoothing value */
     double Smooth;
+    int SmoothNiter;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */
@@ -223,6 +240,11 @@ class Collective
     bool PERIODICX;
     bool PERIODICY;
     bool PERIODICZ;
+    /*! Particle periodicity in each direction */
+    bool PERIODICX_P;
+    bool PERIODICY_P;
+    bool PERIODICZ_P;
+
     /*! number of species */
     int ns;
     /*! number of test particle species */
@@ -357,8 +379,11 @@ class Collective
 
     /*! Output for field */
     int FieldOutputCycle;
+    string  FieldOutputTag;
+    string  MomentsOutputTag;
     /*! Output for particles */
     int ParticlesOutputCycle;
+    string ParticlesOutputTag;
     /*! Output for test particles */
     int TestParticlesOutputCycle;
     /*! test particles are flushed to disk every testPartFlushCycle  */

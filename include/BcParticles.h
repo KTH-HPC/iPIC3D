@@ -23,7 +23,8 @@ namespace BCparticles
     EXIT = 0,
     PERFECT_MIRROR = 1,
     REEMISSION = 2,
-    OPENBC = 3
+    OPENBCOut = 3,
+    OPENBCIn = 4
   };
 }
 

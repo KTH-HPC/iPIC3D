@@ -12,7 +12,15 @@ developers           : Stefano Markidis, Ivy Bo Peng
 
 #include "arraysfwd.h"
 #include "ipicfwd.h"
-
+#include "mpi.h"
+#include "BcFields3D.h"
+#include "VCtopology3D.h"
+#include "TimeTasks.h"
+#include "ipicdefs.h"
+#include "Alloc.h"
+#include "debug.h"
+//#include "parallel.h"
+#include "EMfields3D.h"
 
 /** communicate ghost cells (FOR NODES) */
 void communicateNodeBC(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
@@ -23,6 +31,8 @@ void communicateNode_P(int nx, int ny, int nz, double*** vector, const VirtualTo
 void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
 
 void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
+
+void communicateNodeBC_P(int nx, int ny, int nz, arr3_double vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, const VirtualTopology3D * vct, EMfields3D *EMf);
 
 
 

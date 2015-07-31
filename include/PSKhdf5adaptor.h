@@ -1,12 +1,10 @@
-// File: PSKhdf5adaptor.h
-
 #ifndef _PSK_HDF5_ADAPTOR_H_
+#ifndef NO_HDF5
+
 #define _PSK_HDF5_ADAPTOR_H_
 
 #include "PSKOutput.h"
-
 #include <algorithm>
-
 #include "hdf5.h"
 #include "hdf5_hl.h"
 #include "arraysfwd.h"
@@ -24,8 +22,8 @@ namespace PSK {
     void get_dataset_context(const std::string & name, std::vector < hid_t > &hid_array, std::string & dataset_name);
 
   public:
-      HDF5OutputAdaptor(void) {;
-    } void open(const std::string & name);
+      HDF5OutputAdaptor(void) {}
+      void open(const std::string & name);
     void open_append(const std::string & name);
     void close(void);
 
@@ -60,5 +58,5 @@ namespace PSK {
   };
 
 }                               // namespace
-
+#endif
 #endif

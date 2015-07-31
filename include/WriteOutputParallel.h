@@ -6,7 +6,7 @@
 //#include <string>
 
 #include "ipicfwd.h"
-//#include "phdf5.h"
+#include "phdf5.h"
 //#include "Alloc.h"
 //#include "Grid3DCU.h"
 //#include "EMfields3D.h"

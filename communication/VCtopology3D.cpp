@@ -22,6 +22,11 @@ VCtopology3D::VCtopology3D(const Collective& col) {
   PERIODICX = col.getPERIODICX();
   PERIODICY = col.getPERIODICY();
   PERIODICZ = col.getPERIODICZ();
+
+  PERIODICX_P = col.getPERIODICX_P();
+  PERIODICY_P = col.getPERIODICY_P();
+  PERIODICZ_P = col.getPERIODICZ_P();
+
   // *******************************************
   // *******************************************
   XDIR = 0;
@@ -68,6 +73,13 @@ void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
     MPI_Cart_shift(CART_COMM, XDIR, RIGHT, &xleft_neighbor, &xright_neighbor);
     MPI_Cart_shift(CART_COMM, YDIR, RIGHT, &yleft_neighbor, &yright_neighbor);
     MPI_Cart_shift(CART_COMM, ZDIR, RIGHT, &zleft_neighbor, &zright_neighbor);
+
+    xleft_neighbor_P  = xleft_neighbor;
+    xright_neighbor_P = xright_neighbor;
+    yleft_neighbor_P  = yleft_neighbor;
+    yright_neighbor_P = yright_neighbor;
+    zleft_neighbor_P  = zleft_neighbor;
+    zright_neighbor_P = zright_neighbor;
   }
   else {
     // previous check that nprocs = XLEN*YLEN*ZLEN should prevent reaching this line.
@@ -89,43 +101,70 @@ void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
   // to identify the process from which debug is coming.
   // The cartesian rank is for application-level code.
   assert_eq(cartesian_rank, MPIdata::get_rank());
-  //  // should agree
-  //  assert_eq(cartesian_rank,pcl_cartesian_rank);
-  //  for(int dim=0;dim<3;dim++)
-  //  {
-  //    assert_eq(coordinates[dim],pcl_coordinates[dim]);
-  //  }
-  //
-  //  MPI_Cart_shift(CART_COMM_P, XDIR, RIGHT, &xleft_neighbor_P, &xright_neighbor_P);
-  //  MPI_Cart_shift(CART_COMM_P, YDIR, RIGHT, &yleft_neighbor_P, &yright_neighbor_P);
-  //  MPI_Cart_shift(CART_COMM_P, ZDIR, RIGHT, &zleft_neighbor_P, &zright_neighbor_P);
-  //}
-  //else {
-  //  // previous check that nprocs = XLEN*YLEN*ZLEN should prevent reaching this line.
-  //  eprintf("A process is thrown away from the new topology for Particles.");
-  //}
 
-  _isPeriodicXlower = PERIODICX && isXlower();
-  _isPeriodicXupper = PERIODICX && isXupper();
-  _isPeriodicYlower = PERIODICY && isYlower();
-  _isPeriodicYupper = PERIODICY && isYupper();
-  _isPeriodicZlower = PERIODICZ && isZlower();
-  _isPeriodicZupper = PERIODICZ && isZupper();
 
-  _noXleftNeighbor = (getXleft() == MPI_PROC_NULL);
-  _noXrghtNeighbor = (getXrght() == MPI_PROC_NULL);
-  _noYleftNeighbor = (getYleft() == MPI_PROC_NULL);
-  _noYrghtNeighbor = (getYrght() == MPI_PROC_NULL);
-  _noZleftNeighbor = (getZleft() == MPI_PROC_NULL);
-  _noZrghtNeighbor = (getZrght() == MPI_PROC_NULL);
+  //by default, periodic Particle equals to that of field
+  //exception if Periodic Particle but nonperiodic field
+  if(PERIODICX_P){
+	  if(xleft_neighbor_P==MPI_PROC_NULL && xright_neighbor_P==MPI_PROC_NULL){
+		  xleft_neighbor_P=cartesian_rank;
+		  xright_neighbor_P=cartesian_rank;
+	  }else if(xleft_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0]+XLEN-1, coordinates[1], coordinates[2]};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &xleft_neighbor_P);
+	  }else if(xright_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0]-XLEN+1, coordinates[1], coordinates[2]};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &xright_neighbor_P);
+	  }
+  }
+  if(PERIODICY_P){
+	  if(yleft_neighbor_P==MPI_PROC_NULL && yright_neighbor_P==MPI_PROC_NULL){
+		  yleft_neighbor_P=cartesian_rank;
+		  yright_neighbor_P=cartesian_rank;
+	  }else if(yleft_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0], coordinates[1]+YLEN-1, coordinates[2]};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &yleft_neighbor_P);
+	  }else if(yright_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0], coordinates[1]-YLEN+1, coordinates[2]};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &yright_neighbor_P);
+	  }
+  }
+  if(PERIODICZ_P){
+	  if(zleft_neighbor_P==MPI_PROC_NULL && zright_neighbor_P==MPI_PROC_NULL){
+		  zleft_neighbor_P = cartesian_rank;
+		  zright_neighbor_P= cartesian_rank;dprintf("zleft_neighbor_P=%d, zright_neighbor_P=%d",zleft_neighbor_P,zright_neighbor_P);
+	  }else if(zleft_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0], coordinates[1], coordinates[2]+ZLEN-1};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &zleft_neighbor_P);dprintf("zleft_neighbor_P=%d",zleft_neighbor_P);
+	  }else if(zright_neighbor_P==MPI_PROC_NULL){
+		  const int tempcoord[]={coordinates[0], coordinates[1], coordinates[2]-ZLEN+1};
+		  MPI_Cart_rank(CART_COMM, tempcoord, &zright_neighbor_P);dprintf("zright_neighbor_P=%d",zright_neighbor_P);
+	  }
+  }
 
-  _isBoundaryProcess = 
-    _noXleftNeighbor ||
-    _noXrghtNeighbor ||
-    _noYleftNeighbor ||
-    _noYrghtNeighbor ||
-    _noZleftNeighbor ||
-    _noZrghtNeighbor;
+
+  _isPeriodicXlower_P = PERIODICX_P && (coordinates[0]==0);
+  _isPeriodicXupper_P = PERIODICX_P && (coordinates[0]==dims[0]-1);
+  _isPeriodicYlower_P = PERIODICY_P && (coordinates[1]==0);
+  _isPeriodicYupper_P = PERIODICY_P && (coordinates[1]==dims[1]-1);
+  _isPeriodicZlower_P = PERIODICZ_P && (coordinates[2]==0);
+  _isPeriodicZupper_P = PERIODICZ_P && (coordinates[2]==dims[2]-1);
+
+  _noXleftNeighbor_P = (xleft_neighbor_P == MPI_PROC_NULL);
+  _noXrghtNeighbor_P = (xright_neighbor_P == MPI_PROC_NULL);
+  _noYleftNeighbor_P = (yleft_neighbor_P == MPI_PROC_NULL);
+  _noYrghtNeighbor_P = (yright_neighbor_P == MPI_PROC_NULL);
+  _noZleftNeighbor_P = (zleft_neighbor_P == MPI_PROC_NULL);
+  _noZrghtNeighbor_P = (zright_neighbor_P == MPI_PROC_NULL);
+
+  _isBoundaryProcess_P =
+    _noXleftNeighbor_P ||
+    _noXrghtNeighbor_P ||
+    _noYleftNeighbor_P ||
+    _noYrghtNeighbor_P ||
+    _noZleftNeighbor_P ||
+    _noZrghtNeighbor_P;
+
 }
 /** destructor */
 VCtopology3D::~VCtopology3D() {

@@ -63,6 +63,7 @@ class EMfields3D                // :public Field
     void MaxwellSource(double *bkrylov);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(double R, double x_center, double y_center, double z_center);
+    void ConstantChargePlanet2DPlaneXZ(double R, double x_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
     void ConstantChargeOpenBC();
     /*! Impose a constant charge in the OpenBC boundaries */
@@ -97,11 +98,11 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, arr3_double vector, int type);
+    void smooth(arr3_double vector, int type);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
     void smooth(double value, arr4_double vector, int is, int type);
     /*! smooth the electric field */
-    void smoothE(double value);
+    void smoothE();
 
     /*! copy the field data to the array used to move the particles */
     void set_fieldForPcls();
@@ -226,11 +227,23 @@ class EMfields3D                // :public Field
     double getBzTot(int X, int Y, int Z) const{return Bzn.get(X,Y,Z)+Bz_ext.get(X,Y,Z);}
 
     arr4_double getpXXsn() { return pXXsn; }
+    double getpXXsn(int X,int Y,int Z,int is)const{return pXXsn.get(is,X,Y,Z);}
+
     arr4_double getpXYsn() { return pXYsn; }
+    double getpXYsn(int X,int Y,int Z,int is)const{return pXYsn.get(is,X,Y,Z);}
+
     arr4_double getpXZsn() { return pXZsn; }
+    double getpXZsn(int X,int Y,int Z,int is)const{return pXZsn.get(is,X,Y,Z);}
+
     arr4_double getpYYsn() { return pYYsn; }
+    double getpYYsn(int X,int Y,int Z,int is)const{return pYYsn.get(is,X,Y,Z);}
+
     arr4_double getpYZsn() { return pYZsn; }
+    double getpYZsn(int X,int Y,int Z,int is)const{return pYZsn.get(is,X,Y,Z);}
+
     arr4_double getpZZsn() { return pZZsn; }
+    double getpZZsn(int X,int Y,int Z,int is)const{return pZZsn.get(is,X,Y,Z);}
+
 
     double getJx(int X, int Y, int Z) const { return Jx.get(X,Y,Z);}
     double getJy(int X, int Y, int Z) const { return Jy.get(X,Y,Z);}
@@ -276,7 +289,9 @@ class EMfields3D                // :public Field
     MPI_Datatype getCornertype(bool isCenterFlag){return  isCenterFlag ?cornertypeC : cornertypeN;}
 
 
+
     MPI_Datatype getProcview(){return  procview;}
+    MPI_Datatype getXYZeType(){return xyzcomp;}
     MPI_Datatype getProcviewXYZ(){return  procviewXYZ;}
     MPI_Datatype getGhostType(){return  ghosttype;}
 
@@ -304,6 +319,7 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    int SmoothNiter;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */

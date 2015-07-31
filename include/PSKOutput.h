@@ -318,8 +318,8 @@ public:
     Jx,Jy,Jz
     Jsall --> to write all Js (current densities for each species) components
     Jxs,Jys,Jzs
-    rho -> number density
-    rhos -> number densities for each species
+    rho -> net charge density
+    rhos -> charge densities for each species
     pressure -> pressure tensor for each species
     position -> particle position (x,y)
     velocity -> particle velocity (u,v,w)
@@ -790,7 +790,14 @@ public:
           cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
       }
     }
-
+    // Test Particle ID
+    else if (tag.find("testparttag", 0) != string::npos & sample == 0) {
+      for (int i = 0; i < nstestpart; ++i) {
+        stringstream ii;
+        ii <<  (_part[i+ns]->get_species_num());
+        this->output_adaptor.write("/testparticles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(_part[i+ns]->getNOP()), _part[i+ns]->getParticleIDall());
+      }
+    }
     else if (tag.find("ID", 0) != string::npos & sample != 0) {
       std::vector <longid>ID;
       for (int i = 0; i < ns; ++i) {
