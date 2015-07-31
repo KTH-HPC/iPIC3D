@@ -424,9 +424,10 @@ void c_Solver::WriteOutput(int cycle) {
 		  if(!(col->getFieldOutputTag()).empty()){
 
 			  if(fieldreqcounter>0){
-				  MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
+			          
+			          //MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
 				  for(int si=0;si< fieldreqcounter;si++){
-					  int error_code = fieldstsArr[si].MPI_ERROR;
+				    int error_code = MPI_File_write_all_end(fieldfhArr[si],&fieldwritebuffer[si][0][0][0],&fieldstsArr[si]);//fieldstsArr[si].MPI_ERROR;
 					  if (error_code != MPI_SUCCESS) {
 						  char error_string[100];
 						  int length_of_error_string, error_class;
@@ -444,9 +445,9 @@ void c_Solver::WriteOutput(int cycle) {
 		  if(!(col->getMomentsOutputTag()).empty()){
 
 			  if(momentreqcounter>0){
-				  MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
+			    //MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
 				  for(int si=0;si< momentreqcounter;si++){
-					  int error_code = momentstsArr[si].MPI_ERROR;
+				    int error_code = MPI_File_write_all_end(momentfhArr[si],&momentwritebuffer[si][0][0],&momentstsArr[si]);//momentstsArr[si].MPI_ERROR;
 					  if (error_code != MPI_SUCCESS) {
 						  char error_string[100];
 						  int length_of_error_string, error_class;
