@@ -50,9 +50,6 @@ VCtopology3D::VCtopology3D(const Collective& col) {
 }
 
 
-
-
-
 /** Within CART_COMM, processes find about their new rank numbers, their cartesian coordinates,
   and their neighbors  */
 void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {

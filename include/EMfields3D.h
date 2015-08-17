@@ -53,6 +53,8 @@ class EMfields3D                // :public Field
     /*! Initialise a combination of magnetic dipoles */
     void initDipole();
     void initDipole2D();
+    /*! Initialise magnetic nulls */
+    void initNullPoints();
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE();
     /*! Image of Poisson Solver (for SOLVER) */

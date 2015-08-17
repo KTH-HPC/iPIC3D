@@ -2460,16 +2460,6 @@ void EMfields3D::smooth(arr3_double vector, int type)
           break;
       }
 
-      /*
-      if (icount % 2 == 1) {
-    	  alpha = 0.;
-      }
-      else {
-    	  alpha = 0.5;
-      }
-      beta3D = (1.0 - alpha) / 6;
-      */
-
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
           for (int k = 1; k < nz - 1; k++)
@@ -2503,16 +2493,6 @@ void EMfields3D::smoothE()
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct, this);
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct, this);
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct, this);
-
-      /*
-      if (icount % 2 == 1) {
-    	  alpha = 0.;
-      }
-      else {
-    	  alpha = 0.5;
-      }
-      beta = (1.0 - alpha) / 6;
-      */
 
       // Exth
       for (int i = 1; i < nxn - 1; i++)
@@ -3487,6 +3467,83 @@ void EMfields3D::initGEM()
   else {
     init(); // use the fields from restart file
   }
+}
+
+
+/*! initiliaze EM for GEM challange */
+void EMfields3D::initNullPoints()
+{
+	const VirtualTopology3D *vct = &get_vct();
+	const Grid *grid = &get_grid();
+	if (restart1 ==0){
+		if (vct->getCartesian_rank() ==0){
+			cout << "----------------------------------------" << endl;
+			cout << "       Initialize 3D null point(s)" << endl;
+			cout << "----------------------------------------" << endl;
+			cout << "B0x                              = " << B0x << endl;
+			cout << "B0y                              = " << B0y << endl;
+			cout << "B0z                              = " << B0z << endl;
+			for (int i=0; i < ns; i++){
+				cout << "rho species " << i <<" = " << rhoINIT[i] << endl;
+			}
+			cout << "Smoothing Factor = " << Smooth << endl;
+			cout << "-------------------------" << endl;
+		}
+
+        for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+		for (int k=0; k < nzn; k++){
+		   // initialize the density for species
+		   for (int is=0; is < ns; is++)
+			   rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+
+			// electric field
+			Ex[i][j][k] =  0.0;
+			Ey[i][j][k] =  0.0;
+			Ez[i][j][k] =  0.0;
+			// Magnetic field
+			Bxn[i][j][k] = -B0x*cos(2.*M_PI*grid->getXN(i,j,k)/Lx)*sin(2.*M_PI*grid->getYN(i,j,k)/Ly);
+			Byn[i][j][k] = B0x*cos(2.*M_PI*grid->getYN(i,j,k)/Ly)*(-2.*sin(2.*M_PI*grid->getZN(i,j,k)/Lz) + sin(2.*M_PI*grid->getXN(i,j,k)/Lx));
+			Bzn[i][j][k] = 2.*B0x*cos(2.*M_PI*grid->getZN(i,j,k)/Lz)*sin(2.*M_PI*grid->getYN(i,j,k)/Ly);
+		}
+
+		for (int i=0; i <nxc; i++)
+		for (int j=0; j <nyc; j++)
+		for (int k=0; k <nzc; k++) {
+			Bxc[i][j][k] = -B0x*cos(2.*M_PI*grid->getXC(i,j,k)/Lx)*sin(2.*M_PI*grid->getYC(i,j,k)/Ly);
+			Byc[i][j][k] = B0x*cos(2.*M_PI*grid->getYC(i,j,k)/Ly)*(-2.*sin(2.*M_PI*grid->getZC(i,j,k)/Lz) + sin(2.*M_PI*grid->getXC(i,j,k)/Lx));
+			Bzc[i][j][k] = 2.*B0x*cos(2.*M_PI*grid->getZC(i,j,k)/Lz)*sin(2.*M_PI*grid->getYC(i,j,k)/Ly);
+		}
+
+	    // currents are used to calculate in the Maxwell's solver
+	    // The ion current is equal to 0 (all current is on electrons)
+	    for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+		for (int k=0; k < nzn; k++){
+			Jxs[1][i][j][k] = 0.0; // ion species is species 1
+			Jys[1][i][j][k] = 0.0; // ion species is species 1
+			Jzs[1][i][j][k] = 0.0; // ion species is species 1
+		}
+
+	    // calculate the electron current from
+        eqValue(0.0,tempXN,nxn,nyn,nzn);
+        eqValue(0.0,tempYN,nxn,nyn,nzn);
+        eqValue(0.0,tempZN,nxn,nyn,nzn);
+        grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc); // here you calculate curl(B)
+        // all current is on electrons, calculated from Ampere's law
+        for (int i=0; i < nxn; i++)
+        for (int j=0; j < nyn; j++)
+        for (int k=0; k < nzn; k++){  // electrons are species 0
+			Jxs[0][i][j][k] = c*tempXN[i][j][k]/FourPI; // ion species is species 1
+			Jys[0][i][j][k] = c*tempYN[i][j][k]/FourPI; // ion species is species 1
+			Jzs[0][i][j][k] = c*tempZN[i][j][k]/FourPI; // ion species is species 1
+		}
+
+		for (int is=0 ; is<ns; is++)
+			grid->interpN2C(rhocs,is,rhons);
+	} else {
+		init();  // use the fields from restart file
+	}
 }
 
 void EMfields3D::initOriginalGEM()

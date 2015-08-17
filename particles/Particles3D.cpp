@@ -221,6 +221,52 @@ void Particles3D::maxwellian(Field * EMf)
   }
 }
 
+/** Maxellian velocity from currents and uniform spatial distribution */
+void Particles3D::maxwellianNullPoints(Field * EMf)
+{
+	/* initialize random generator with different seed on different processor */
+	srand(vct->getCartesian_rank()+2);
+
+	const double q_sgn = (qom / fabs(qom));
+	const double q_factor =  q_sgn * grid->getVOL() / npcel;
+
+	for (int i=1; i< grid->getNXC()-1;i++)
+	for (int j=1; j< grid->getNYC()-1;j++)
+	for (int k=1; k< grid->getNZC()-1;k++){
+		const double q = q_factor * EMf->getRHOcs(i, j, k, ns);
+
+		// determine the drift velocity from current X
+		u0 = EMf->getJxs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (u0 > c){
+			cout << "DRIFT VELOCITY x > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		// determine the drift velocity from current Y
+		v0 = EMf->getJys(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (v0 > c){
+			cout << "DRIFT VELOCITY y > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		// determine the drift velocity from current Z
+		w0 = EMf->getJzs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (w0 > c){
+			cout << "DRIFT VELOCITY z > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		for (int ii=0; ii < npcelx; ii++)
+		for (int jj=0; jj < npcely; jj++)
+		for (int kk=0; kk < npcelz; kk++){
+			double u,v,w;
+			sample_maxwellian(u, v, w, uth, vth, wth, u0, v0, w0);
+
+			const double x = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+			const double y = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+			const double z = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+
+			create_new_particle(u,v,w,q,x,y,z);
+		}
+	}
+}
 
 /** pitch_angle_energy initialization (Assume B on z only) for test particles */
 void Particles3D::pitch_angle_energy(Field * EMf) {

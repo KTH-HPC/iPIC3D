@@ -115,14 +115,15 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid, vct);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert();
-  else if (col->getCase()=="ForceFree") EMf->initForceFree();
-  else if (col->getCase()=="GEM")       EMf->initGEM();
+  if      (col->getCase()=="GEMnoPert") 	EMf->initGEMnoPert();
+  else if (col->getCase()=="ForceFree") 	EMf->initForceFree();
+  else if (col->getCase()=="GEM")       	EMf->initGEM();
 #ifdef BATSRUS
-  else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS();
+  else if (col->getCase()=="BATSRUS")   	EMf->initBATSRUS();
 #endif
-  else if (col->getCase()=="Dipole")    EMf->initDipole();
-  else if (col->getCase()=="Dipole2D")    EMf->initDipole2D();
+  else if (col->getCase()=="Dipole")    	EMf->initDipole();
+  else if (col->getCase()=="Dipole2D")  	EMf->initDipole2D();
+  else if (col->getCase()=="NullPoints")    EMf->initNullPoints();
   else if (col->getCase()=="RandomCase") {
     EMf->initRandomField();
     if (myrank==0) {
@@ -151,11 +152,12 @@ int c_Solver::Init(int argc, char **argv) {
   if (restart_status == 0) {
     for (int i = 0; i < ns; i++)
     {
-      if      (col->getCase()=="ForceFree") part[i].force_free(EMf);
+      if      (col->getCase()=="ForceFree") 	part[i].force_free(EMf);
 #ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(EMf,col,i);
+      else if (col->getCase()=="BATSRUS")   	part[i].MaxwellianFromFluid(EMf,col,i);
 #endif
-      else                                  part[i].maxwellian(EMf);
+      else if (col->getCase()=="NullPoints")    part[i].maxwellianNullPoints(EMf);
+      else                                  	part[i].maxwellian(EMf);
       part[i].reserve_remaining_particle_IDs();
     }
   }
@@ -549,15 +551,51 @@ void c_Solver::WriteConserved(int cycle) {
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
     }
-    if (myrank == 0) {
+    if (myrank == (nprocs-1)) {
       ofstream my_file(cq.c_str(), fstream::app);
-      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
+      if(cycle == 0)
+      my_file << "Cycle" << "\t"<< "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
 
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t"  << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
     }
   }
 }
+/* write the conserved quantities
+void c_Solver::WriteConserved(int cycle) {
+  if(col->getDiagnosticsOutputCycle() > 0 && cycle % col->getDiagnosticsOutputCycle() == 0)
+  {
+	if(cycle==0)buf_counter=0;
+    Eenergy[buf_counter] = EMf->getEenergy();
+    Benergy[buf_counter] = EMf->getBenergy();
+    Kenergy[buf_counter] = 0.0;
+    TOTmomentum[buf_counter] = 0.0;
+    for (int is = 0; is < ns; is++) {
+      Ke[is] = part[is].getKe();
+      Kenergy[buf_counter] += Ke[is];
+      momentum[is] = part[is].getP();
+      TOTmomentum[buf_counter] += momentum[is];
+    }
+    outputcycle[buf_counter] = cycle;
+    buf_counter ++;
+
+    //Flush out result if this is the last cycle or the buffer is full
+    if(buf_counter==OUTPUT_BUFSIZE || cycle==(LastCycle()-1)){
+    	if (myrank == (nprocs-1)) {
+    		ofstream my_file(cq.c_str(), fstream::app);
+    		stringstream ss;
+      //if(cycle/OUTPUT_BUFSIZE == 0)
+      //my_file  << "Cycle" << "\t" << "Total_Energy" 				 << "\t" << "Momentum" << "\t" << "Eenergy" <<"\t" << "Benergy" << "\t" << "Kenergy" << endl;
+    		for(int bufid=0;bufid<OUTPUT_BUFSIZE;bufid++)
+    			ss << outputcycle[bufid] << "\t" << (Eenergy[bufid]+Benergy[bufid]+Kenergy[bufid])<< "\t" << TOTmomentum[bufid] << "\t" << Eenergy[bufid] << "\t" << Benergy[bufid] << "\t" << Kenergy[bufid] << endl;
+
+    		my_file << ss;
+    		my_file.close();
+    	}
+    	buf_counter = 0;
+    }
+  }
+}*/
 
 void c_Solver::WriteVelocityDistribution(int cycle)
 {
