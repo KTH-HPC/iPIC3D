@@ -115,15 +115,16 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid, vct);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase()=="GEMnoPert") 	EMf->initGEMnoPert();
-  else if (col->getCase()=="ForceFree") 	EMf->initForceFree();
-  else if (col->getCase()=="GEM")       	EMf->initGEM();
+  if      (col->getCase()=="GEMnoPert") 		EMf->initGEMnoPert();
+  else if (col->getCase()=="ForceFree") 		EMf->initForceFree();
+  else if (col->getCase()=="GEM")       		EMf->initGEM();
+  else if (col->getCase()=="GEMDoubleHarris")  	EMf->initGEMDoubleHarris();
 #ifdef BATSRUS
-  else if (col->getCase()=="BATSRUS")   	EMf->initBATSRUS();
+  else if (col->getCase()=="BATSRUS")   		EMf->initBATSRUS();
 #endif
-  else if (col->getCase()=="Dipole")    	EMf->initDipole();
-  else if (col->getCase()=="Dipole2D")  	EMf->initDipole2D();
-  else if (col->getCase()=="NullPoints")    EMf->initNullPoints();
+  else if (col->getCase()=="Dipole")    		EMf->initDipole();
+  else if (col->getCase()=="Dipole2D")  		EMf->initDipole2D();
+  else if (col->getCase()=="NullPoints")    	EMf->initNullPoints();
   else if (col->getCase()=="RandomCase") {
     EMf->initRandomField();
     if (myrank==0) {
@@ -152,12 +153,13 @@ int c_Solver::Init(int argc, char **argv) {
   if (restart_status == 0) {
     for (int i = 0; i < ns; i++)
     {
-      if      (col->getCase()=="ForceFree") 	part[i].force_free(EMf);
+      if      (col->getCase()=="ForceFree") 		part[i].force_free(EMf);
 #ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   	part[i].MaxwellianFromFluid(EMf,col,i);
+      else if (col->getCase()=="BATSRUS")   		part[i].MaxwellianFromFluid(EMf,col,i);
 #endif
-      else if (col->getCase()=="NullPoints")    part[i].maxwellianNullPoints(EMf);
-      else                                  	part[i].maxwellian(EMf);
+      else if (col->getCase()=="NullPoints")    	part[i].maxwellianNullPoints(EMf);
+      else if (col->getCase()=="GEMDoubleHarris")  	part[i].maxwellianDoubleHarris(EMf);
+      else                                  		part[i].maxwellian(EMf);
       part[i].reserve_remaining_particle_IDs();
     }
   }
@@ -286,11 +288,11 @@ void c_Solver::CalculateMoments() {
 }
 
 //! MAXWELL SOLVER for Efield
-void c_Solver::CalculateField() {
+void c_Solver::CalculateField(int cycle) {
   timeTasks_set_main_task(TimeTasks::FIELDS);
 
   // calculate the E field
-  EMf->calculateE();
+  EMf->calculateE(cycle);
 }
 
 //! MAXWELL SOLVER for Bfield (assuming Efield has already been calculated)

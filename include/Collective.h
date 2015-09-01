@@ -158,6 +158,7 @@ class Collective
     string getMomentsOutputTag()const{return MomentsOutputTag;}
     string getPclOutputTag()const{return ParticlesOutputTag;}
     string getPoissonCorrection()const{ return (PoissonCorrection); }
+    int getPoissonCorrectionCycle()const{ return (PoissonCorrectionCycle); }
     int getLast_cycle()const{ return (last_cycle); }
     double getVinj()const{ return (Vinj); }
     double getCGtol()const{ return (CGtol); }
@@ -295,7 +296,7 @@ class Collective
     string SimName;
     /*! Poisson correction flag */
     string PoissonCorrection;
-
+    int PoissonCorrectionCycle;
     /*! TrackParticleID */
     bool *TrackParticleID;
     /*! SaveDirName */

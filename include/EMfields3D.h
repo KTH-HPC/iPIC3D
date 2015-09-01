@@ -31,6 +31,7 @@ class EMfields3D                // :public Field
     /*! initialize GEM challenge */
     void initGEM();
     void initOriginalGEM();
+    void initGEMDoubleHarris();
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation();
     /*! initialize GEM challenge with dipole-like tail without perturbation */
     void initGEMDipoleLikeTailNoPert();
@@ -56,7 +57,7 @@ class EMfields3D                // :public Field
     /*! Initialise magnetic nulls */
     void initNullPoints();
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE();
+    void calculateE(int cycle);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector);
     /*! Image of Maxwell Solver (for Solver) */
@@ -73,7 +74,8 @@ class EMfields3D                // :public Field
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB();
     /*! fix B on the boundary for gem challange */
-    void fixBgem();
+    void fixBcGEM();
+    void fixBnGEM();
     /*! fix B on the boundary for gem challange */
     void fixBforcefree();
 
@@ -525,6 +527,7 @@ class EMfields3D                // :public Field
 
     /*! boolean for divergence cleaning */
     bool PoissonCorrection;
+    int PoissonCorrectionCycle;
     /*! RESTART BOOLEAN */
     int restart1;
 
