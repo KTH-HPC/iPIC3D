@@ -455,6 +455,7 @@ void Collective::ReadInput(string inputfile) {
     ReadRestart(RestartDirName);
   }
 
+  /*
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
   TrackParticleID[0] = TrackParticleID0.a;
@@ -468,6 +469,7 @@ void Collective::ReadInput(string inputfile) {
     TrackParticleID[4] = TrackParticleID0.e;
   if (ns > 5)
     TrackParticleID[5] = TrackParticleID0.f;
+    */
 }
 
 bool Collective::field_output_is_off()const
@@ -1187,7 +1189,7 @@ Collective::~Collective() {
   delete[]v0;
   delete[]w0;
 
-  delete[]TrackParticleID;
+  //delete[]TrackParticleID;
 
   delete[]rhoINIT;
   delete[]rhoINJECT;

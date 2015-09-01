@@ -145,8 +145,7 @@ class Collective
     double getB1y()const{ return (B1y); }
     double getB1z()const{ return (B1z); }
     //bool getVerbose()const{ return (verbose); }
-    bool getTrackParticleID(int nspecies)const
-      { return (TrackParticleID[nspecies]); }
+    //bool getTrackParticleID(int nspecies)const{ return (TrackParticleID[nspecies]); }
     int getRestart_status()const{ return (restart_status); }
     string getSaveDirName()const{ return (SaveDirName); }
     string getRestartDirName()const{ return (RestartDirName); }
@@ -298,7 +297,7 @@ class Collective
     string PoissonCorrection;
     int PoissonCorrectionCycle;
     /*! TrackParticleID */
-    bool *TrackParticleID;
+    //bool *TrackParticleID;
     /*! SaveDirName */
     string SaveDirName;
     /*! RestartDirName */

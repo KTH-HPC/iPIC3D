@@ -165,12 +165,12 @@ if( !isTestParticle ){
   u0 = col->getU0(get_species_num());
   v0 = col->getV0(get_species_num());
   w0 = col->getW0(get_species_num());
-  TrackParticleID = col->getTrackParticleID(get_species_num());
+  //TrackParticleID = col->getTrackParticleID(get_species_num());
   Ninj = col->getRHOinject(get_species_num());
 }else{
 	pitch_angle = col->getPitchAngle(get_species_num()-col->getNs());
 	energy = col->getEnergy(get_species_num()-col->getNs());
-	TrackParticleID = true;
+	//TrackParticleID = true;
 }
   dt = col->getDt();
   Lx = col->getLx();
