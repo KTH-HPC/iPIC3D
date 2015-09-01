@@ -58,6 +58,7 @@ PERIODICZ = 1
 ns = 2
 # Initial density (make sure you are neutral)
 rhoINIT =    	  1.0	 1.0  
+rhoINJECT=	  0.0	 0.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID = 0	 0 
 # npcelx = number of particles per cell - Direction X 
