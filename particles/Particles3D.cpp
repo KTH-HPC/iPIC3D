@@ -631,10 +631,13 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 	#pragma omp parallel
 	{
 	  convertParticlesToAoS();
-	  #pragma omp master
+
+	  /*
+          #pragma omp master
 	  if (vct->getCartesian_rank() == 0) {
 		cout << "***AoS MOVER species " << ns << " *** Max." << NiterMover << " ITERATIONS   ****" << endl;
-	  }
+	  }*/
+
 	  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 	  //int sum_innter = 0;
 
