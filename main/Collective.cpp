@@ -452,7 +452,18 @@ void Collective::ReadInput(string inputfile) {
 
   if (RESTART1) {               // you are restarting
     RestartDirName = config.read < string > ("RestartDirName","data");
-    ReadRestart(RestartDirName);
+    //ReadRestart(RestartDirName);
+    restart_status = 1;
+    hid_t file_id = H5Fopen((RestartDirName + "/restart0.hdf").c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+    if (file_id < 0) {
+      cout << "couldn't open file: " << inputfile << endl;
+      return;
+    }
+
+    hid_t dataset_id = H5Dopen2(file_id, "/last_cycle", H5P_DEFAULT);  // HDF 1.8.8
+    herr_t status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &last_cycle);
+    status = H5Dclose(dataset_id);
+    status = H5Fclose(file_id);
   }
 
   /*
@@ -1065,12 +1076,12 @@ void Collective::read_particles_restart(
     status = H5Dclose(dataset_id);
 
     // get ID
-    if (false) {//TrackParticleID
+    
 		ss.str("");ss << "/particles/species_" << species_number << "/ID/cycle_" << lastcycle;
 		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
-		status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
+		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
 		status = H5Dclose(dataset_id);
-    }
+   
 
     status = H5Fclose(file_id);
 #endif
