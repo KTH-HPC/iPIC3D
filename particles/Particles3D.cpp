@@ -980,7 +980,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  localAvgArr[0]=local_subcycle;
 	  localAvgArr[1]=local_innter;
 	  double globalAvgArr[2];
-	  MPI_Reduce(&localAvgArr, &globalAvgArr, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	  MPI_Reduce(&localAvgArr, &globalAvgArr, 2, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
 	  if (MPIdata::get_rank() == 0)
 		  cout << "*** Relativistic AoS MOVER with Subcycling  species " << ns << " ***" 
 		  << globalAvgArr[0]/MPIdata::get_nprocs()  << " subcyles ***" << globalAvgArr[1]/MPIdata::get_nprocs()<< " ITERATIONS   ****" << endl;

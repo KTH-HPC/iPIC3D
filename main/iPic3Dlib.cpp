@@ -746,7 +746,6 @@ void c_Solver::convertParticlesToSynched()
 }
 
 
-
 int c_Solver::LastCycle() {
     return (col->getNcycles() + first_cycle);
 }

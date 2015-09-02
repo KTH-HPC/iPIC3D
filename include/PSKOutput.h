@@ -795,11 +795,11 @@ public:
       }
     }
     else if (tag.find("ID", 0) != string::npos & sample != 0) {
-      std::vector <longid>ID;
+      std::vector <double>ID;
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
-        const longid* pclID = _part[i]->getParticleIDall();
+        const double* pclID = _part[i]->getParticleIDall();
         const int num_samples = _part[i]->getNOP()/sample;
         ID.reserve(num_samples);
 
