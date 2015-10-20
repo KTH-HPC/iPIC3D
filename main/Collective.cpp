@@ -1073,15 +1073,18 @@ void Collective::read_particles_restart(
     ss.str("");ss << "/particles/species_" << species_number << "/q/cycle_" << lastcycle;
     dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &q[0]);
+
+    //if ID is not saved, read in q as ID
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
+
     status = H5Dclose(dataset_id);
 
-    // get ID
-    
+    /* get ID
 		ss.str("");ss << "/particles/species_" << species_number << "/ID/cycle_" << lastcycle;
 		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
 		status = H5Dclose(dataset_id);
-   
+    */
 
     status = H5Fclose(file_id);
 #endif
