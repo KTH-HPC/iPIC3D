@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*!************************************************************************* EMfields3D.h - ElectroMagnetic fields definition ------------------- begin : May 2008 copyright : KU Leuven developers : Stefano Markidis, Giovanni Lapenta ************************************************************************* */
 
 #ifndef EMfields3D_H
@@ -31,6 +51,7 @@ class EMfields3D                // :public Field
     /*! initialize GEM challenge */
     void initGEM();
     void initOriginalGEM();
+    void initGEMDoubleHarris();
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation();
     /*! initialize GEM challenge with dipole-like tail without perturbation */
     void initGEMDipoleLikeTailNoPert();
@@ -53,8 +74,10 @@ class EMfields3D                // :public Field
     /*! Initialise a combination of magnetic dipoles */
     void initDipole();
     void initDipole2D();
+    /*! Initialise magnetic nulls */
+    void initNullPoints();
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE();
+    void calculateE(int cycle);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector);
     /*! Image of Maxwell Solver (for Solver) */
@@ -71,7 +94,8 @@ class EMfields3D                // :public Field
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB();
     /*! fix B on the boundary for gem challange */
-    void fixBgem();
+    void fixBcGEM();
+    void fixBnGEM();
     /*! fix B on the boundary for gem challange */
     void fixBforcefree();
 
@@ -523,6 +547,7 @@ class EMfields3D                // :public Field
 
     /*! boolean for divergence cleaning */
     bool PoissonCorrection;
+    int PoissonCorrectionCycle;
     /*! RESTART BOOLEAN */
     int restart1;
 

@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 #include "mpi.h"
 #include "MPIdata.h"
@@ -115,14 +135,16 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid, vct);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert();
-  else if (col->getCase()=="ForceFree") EMf->initForceFree();
-  else if (col->getCase()=="GEM")       EMf->initGEM();
+  if      (col->getCase()=="GEMnoPert") 		EMf->initGEMnoPert();
+  else if (col->getCase()=="ForceFree") 		EMf->initForceFree();
+  else if (col->getCase()=="GEM")       		EMf->initGEM();
+  else if (col->getCase()=="GEMDoubleHarris")  	EMf->initGEMDoubleHarris();
 #ifdef BATSRUS
-  else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS();
+  else if (col->getCase()=="BATSRUS")   		EMf->initBATSRUS();
 #endif
-  else if (col->getCase()=="Dipole")    EMf->initDipole();
-  else if (col->getCase()=="Dipole2D")    EMf->initDipole2D();
+  else if (col->getCase()=="Dipole")    		EMf->initDipole();
+  else if (col->getCase()=="Dipole2D")  		EMf->initDipole2D();
+  else if (col->getCase()=="NullPoints")    	EMf->initNullPoints();
   else if (col->getCase()=="RandomCase") {
     EMf->initRandomField();
     if (myrank==0) {
@@ -151,11 +173,13 @@ int c_Solver::Init(int argc, char **argv) {
   if (restart_status == 0) {
     for (int i = 0; i < ns; i++)
     {
-      if      (col->getCase()=="ForceFree") part[i].force_free(EMf);
+      if      (col->getCase()=="ForceFree") 		part[i].force_free(EMf);
 #ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(EMf,col,i);
+      else if (col->getCase()=="BATSRUS")   		part[i].MaxwellianFromFluid(EMf,col,i);
 #endif
-      else                                  part[i].maxwellian(EMf);
+      else if (col->getCase()=="NullPoints")    	part[i].maxwellianNullPoints(EMf);
+      else if (col->getCase()=="GEMDoubleHarris")  	part[i].maxwellianDoubleHarris(EMf);
+      else                                  		part[i].maxwellian(EMf);
       part[i].reserve_remaining_particle_IDs();
     }
   }
@@ -284,11 +308,11 @@ void c_Solver::CalculateMoments() {
 }
 
 //! MAXWELL SOLVER for Efield
-void c_Solver::CalculateField() {
+void c_Solver::CalculateField(int cycle) {
   timeTasks_set_main_task(TimeTasks::FIELDS);
 
   // calculate the E field
-  EMf->calculateE();
+  EMf->calculateE(cycle);
 }
 
 //! MAXWELL SOLVER for Bfield (assuming Efield has already been calculated)
@@ -424,9 +448,10 @@ void c_Solver::WriteOutput(int cycle) {
 		  if(!(col->getFieldOutputTag()).empty()){
 
 			  if(fieldreqcounter>0){
-				  MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
+			          
+			          //MPI_Waitall(fieldreqcounter,&fieldreqArr[0],&fieldstsArr[0]);
 				  for(int si=0;si< fieldreqcounter;si++){
-					  int error_code = fieldstsArr[si].MPI_ERROR;
+				    int error_code = MPI_File_write_all_end(fieldfhArr[si],&fieldwritebuffer[si][0][0][0],&fieldstsArr[si]);//fieldstsArr[si].MPI_ERROR;
 					  if (error_code != MPI_SUCCESS) {
 						  char error_string[100];
 						  int length_of_error_string, error_class;
@@ -444,9 +469,9 @@ void c_Solver::WriteOutput(int cycle) {
 		  if(!(col->getMomentsOutputTag()).empty()){
 
 			  if(momentreqcounter>0){
-				  MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
+			    //MPI_Waitall(momentreqcounter,&momentreqArr[0],&momentstsArr[0]);
 				  for(int si=0;si< momentreqcounter;si++){
-					  int error_code = momentstsArr[si].MPI_ERROR;
+				    int error_code = MPI_File_write_all_end(momentfhArr[si],&momentwritebuffer[si][0][0],&momentstsArr[si]);//momentstsArr[si].MPI_ERROR;
 					  if (error_code != MPI_SUCCESS) {
 						  char error_string[100];
 						  int length_of_error_string, error_class;
@@ -548,15 +573,51 @@ void c_Solver::WriteConserved(int cycle) {
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
     }
-    if (myrank == 0) {
+    if (myrank == (nprocs-1)) {
       ofstream my_file(cq.c_str(), fstream::app);
-      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
+      if(cycle == 0)
+      my_file << "Cycle" << "\t"<< "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
 
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t"  << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
     }
   }
 }
+/* write the conserved quantities
+void c_Solver::WriteConserved(int cycle) {
+  if(col->getDiagnosticsOutputCycle() > 0 && cycle % col->getDiagnosticsOutputCycle() == 0)
+  {
+	if(cycle==0)buf_counter=0;
+    Eenergy[buf_counter] = EMf->getEenergy();
+    Benergy[buf_counter] = EMf->getBenergy();
+    Kenergy[buf_counter] = 0.0;
+    TOTmomentum[buf_counter] = 0.0;
+    for (int is = 0; is < ns; is++) {
+      Ke[is] = part[is].getKe();
+      Kenergy[buf_counter] += Ke[is];
+      momentum[is] = part[is].getP();
+      TOTmomentum[buf_counter] += momentum[is];
+    }
+    outputcycle[buf_counter] = cycle;
+    buf_counter ++;
+
+    //Flush out result if this is the last cycle or the buffer is full
+    if(buf_counter==OUTPUT_BUFSIZE || cycle==(LastCycle()-1)){
+    	if (myrank == (nprocs-1)) {
+    		ofstream my_file(cq.c_str(), fstream::app);
+    		stringstream ss;
+      //if(cycle/OUTPUT_BUFSIZE == 0)
+      //my_file  << "Cycle" << "\t" << "Total_Energy" 				 << "\t" << "Momentum" << "\t" << "Eenergy" <<"\t" << "Benergy" << "\t" << "Kenergy" << endl;
+    		for(int bufid=0;bufid<OUTPUT_BUFSIZE;bufid++)
+    			ss << outputcycle[bufid] << "\t" << (Eenergy[bufid]+Benergy[bufid]+Kenergy[bufid])<< "\t" << TOTmomentum[bufid] << "\t" << Eenergy[bufid] << "\t" << Benergy[bufid] << "\t" << Kenergy[bufid] << endl;
+
+    		my_file << ss;
+    		my_file.close();
+    	}
+    	buf_counter = 0;
+    }
+  }
+}*/
 
 void c_Solver::WriteVelocityDistribution(int cycle)
 {
@@ -703,7 +764,6 @@ void c_Solver::convertParticlesToSynched()
   for (int i = 0; i < nstestpart; i++)
     testpart[i].convertParticlesToSynched();
 }
-
 
 
 int c_Solver::LastCycle() {

@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /***************************************************************************
   VCtopology3D.h  -  a 3D Virtual cartesian topology
   A virtual topology is a mechanism for naming the processes
@@ -112,14 +132,15 @@ public:
   const int *getCoordinates()const{ return (coordinates); }
   const int *getDims()const{ return dims; }
   int getPeriods(int dir)const{ return (periods[dir]); }
-  MPI_Comm getComm()const{ return (CART_COMM); }
+  MPI_Comm getFieldComm()const{ return (CART_COMM); }
+  MPI_Comm getParticleComm()const{ return (CART_COMM_P); }
 
 
 private:
   /** New communicator with virtual cartesian topology */
   MPI_Comm CART_COMM;
   /** New communicator with virtual cartesian topology for Particles*/
-  //MPI_Comm CART_COMM_P;
+  MPI_Comm CART_COMM_P;
   /** MPI status during sending and receiving communication */
   MPI_Status status;
   /** Direction X for shift MPI_Cart_Shift*/
@@ -163,7 +184,7 @@ private:
   int dims[3]; // i.e. divisions
   /** periodicity */
   int periods[3];
-  //int periods_P[3];
+  int periods_P[3];
   /** coordinates on processors grid */
   int coordinates[3];
   /** cartesian rank */

@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 #include <mpi.h>
 #include <math.h>
@@ -121,6 +141,7 @@ void Collective::ReadInput(string inputfile) {
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
+    PoissonCorrectionCycle = config.read<int>("PoissonCorrectionCycle",10);
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -448,12 +469,25 @@ void Collective::ReadInput(string inputfile) {
   bcPfaceZright = config.read < int >("bcPfaceZright",1);
   bcPfaceZleft  = config.read < int >("bcPfaceZleft",1);
 
-
+#ifndef NO_HDF5 
   if (RESTART1) {               // you are restarting
     RestartDirName = config.read < string > ("RestartDirName","data");
-    ReadRestart(RestartDirName);
-  }
+    //ReadRestart(RestartDirName);
+    restart_status = 1;
+    hid_t file_id = H5Fopen((RestartDirName + "/restart0.hdf").c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+    if (file_id < 0) {
+      cout << "couldn't open file: " << inputfile << endl;
+      return;
+    }
 
+    hid_t dataset_id = H5Dopen2(file_id, "/last_cycle", H5P_DEFAULT);  // HDF 1.8.8
+    herr_t status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &last_cycle);
+    status = H5Dclose(dataset_id);
+    status = H5Fclose(file_id);
+  }
+#endif
+
+  /*
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
   TrackParticleID[0] = TrackParticleID0.a;
@@ -467,6 +501,7 @@ void Collective::ReadInput(string inputfile) {
     TrackParticleID[4] = TrackParticleID0.e;
   if (ns > 5)
     TrackParticleID[5] = TrackParticleID0.f;
+    */
 }
 
 bool Collective::field_output_is_off()const
@@ -1059,15 +1094,18 @@ void Collective::read_particles_restart(
     ss.str("");ss << "/particles/species_" << species_number << "/q/cycle_" << lastcycle;
     dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &q[0]);
+
+    //if ID is not saved, read in q as ID
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
+
     status = H5Dclose(dataset_id);
 
-    // get ID
-    if (false) {//TrackParticleID
+    /* get ID
 		ss.str("");ss << "/particles/species_" << species_number << "/ID/cycle_" << lastcycle;
 		dataset_id = H5Dopen2(file_id, ss.str().c_str(), H5P_DEFAULT); // HDF 1.8.8
-		status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
+		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &t[0]);
 		status = H5Dclose(dataset_id);
-    }
+    */
 
     status = H5Fclose(file_id);
 #endif
@@ -1186,7 +1224,7 @@ Collective::~Collective() {
   delete[]v0;
   delete[]w0;
 
-  delete[]TrackParticleID;
+  //delete[]TrackParticleID;
 
   delete[]rhoINIT;
   delete[]rhoINJECT;

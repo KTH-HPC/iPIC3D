@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /***************************************************************************
   Collective.h  -  Stefano Markidis, Giovanni Lapenta
   -------------------------------------------------------------------------- */
@@ -15,7 +35,7 @@
 #include "VCtopology3D.h"
 #include "Grid3DCU.h"
 #include "aligned_vector.h"
-//#include "CollectiveIO.h"
+
 class ConfigFile;
 using namespace std;
 
@@ -145,8 +165,7 @@ class Collective
     double getB1y()const{ return (B1y); }
     double getB1z()const{ return (B1z); }
     //bool getVerbose()const{ return (verbose); }
-    bool getTrackParticleID(int nspecies)const
-      { return (TrackParticleID[nspecies]); }
+    //bool getTrackParticleID(int nspecies)const{ return (TrackParticleID[nspecies]); }
     int getRestart_status()const{ return (restart_status); }
     string getSaveDirName()const{ return (SaveDirName); }
     string getRestartDirName()const{ return (RestartDirName); }
@@ -158,6 +177,7 @@ class Collective
     string getMomentsOutputTag()const{return MomentsOutputTag;}
     string getPclOutputTag()const{return ParticlesOutputTag;}
     string getPoissonCorrection()const{ return (PoissonCorrection); }
+    int getPoissonCorrectionCycle()const{ return (PoissonCorrectionCycle); }
     int getLast_cycle()const{ return (last_cycle); }
     double getVinj()const{ return (Vinj); }
     double getCGtol()const{ return (CGtol); }
@@ -295,9 +315,9 @@ class Collective
     string SimName;
     /*! Poisson correction flag */
     string PoissonCorrection;
-
+    int PoissonCorrectionCycle;
     /*! TrackParticleID */
-    bool *TrackParticleID;
+    //bool *TrackParticleID;
     /*! SaveDirName */
     string SaveDirName;
     /*! RestartDirName */

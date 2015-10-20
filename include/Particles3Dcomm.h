@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*******************************************************************************************
   Particles3Dcommcomm.h  -  Class for particles of the same species, in a 2D space and 3component velocity with communications methods
   -------------------
@@ -7,7 +27,6 @@ developers: Stefano Markidis, Giovanni Lapenta
 #ifndef Part3DCOMM_H
 #define Part3DCOMM_H
 
-//#include "CollectiveIO.h"
 #include "ipicfwd.h"
 #include "Alloc.h"
 #include "Particle.h" // for ParticleType
@@ -16,6 +35,19 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "aligned_vector.h"
 #include "Larray.h"
 #include "IDgenerator.h"
+
+namespace BCparticles
+{
+    enum Enum
+    {
+        EXIT = 0,
+        PERFECT_MIRROR = 1,
+        REEMISSION = 2,
+        OPENBCOut = 3,
+        OPENBCIn = 4
+    };
+}
+
 /**
  * 
  * class for particles of the same species with communications methods
@@ -156,25 +188,7 @@ public:
   const double *getXall()  const { assert(particlesAreSoA()); return &x[0]; }
   const double *getYall()  const { assert(particlesAreSoA()); return &y[0]; }
   const double *getZall()  const { assert(particlesAreSoA()); return &z[0]; }
-  static ID_field::Enum id_field()
-  {
-    return ID_field::Q; // q
-    return ID_field::T; // t
-  }
-  const longid*getParticleIDall() const
-  {
-    longid* ret;
-    switch(id_field())
-    {
-      default:
-        invalid_value_error(id_field());
-      case ID_field::Q:
-        ret = (longid*) &q[0];
-      case ID_field::T:
-        ret = (longid*) &t[0];
-    }
-    return ret;
-  }
+  const double *getParticleIDall() const{assert(particlesAreSoA());return &t[0];  }
   // accessors for particle with index indexPart
   //
   int getNOP()  const { return _pcls.size(); }
@@ -298,7 +312,7 @@ protected:
   // subcycle time
   vector_double t;
   // indicates whether this class is for tracking particles
-  bool TrackParticleID;
+  //bool TrackParticleID;
   bool isTestParticle;
   double pitch_angle;
   double energy;
@@ -355,7 +369,7 @@ protected:
   //
   /** buffers for communication */
   //
-  // communicator for this species (duplicated from MPI_COMM_WORLD)
+  // communicator for this specie
   MPI_Comm mpi_comm;
   // send buffers
   //

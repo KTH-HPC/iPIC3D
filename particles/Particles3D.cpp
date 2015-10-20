@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*******************************************************************************************
   Particles3D.cpp  -  Class for particles of the same species, in a 3D space and 3component velocity
   -------------------
@@ -10,14 +30,9 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include <math.h>
 #include <limits.h>
 #include "asserts.h"
-
-#include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
-#include "CollectiveIO.h"
 #include "Collective.h"
 #include "Basic.h"
-#include "BcParticles.h"
-#include "Grid.h"
 #include "Grid3DCU.h"
 #include "Field.h"
 #include "MPIdata.h"
@@ -218,6 +233,93 @@ void Particles3D::maxwellian(Field * EMf)
     const int num_ids = 1;
     longid id_list[num_ids] = {0};
     print_pcls(_pcls,ns,id_list, num_ids);
+  }
+}
+
+/** Maxellian velocity from currents and uniform spatial distribution */
+void Particles3D::maxwellianNullPoints(Field * EMf)
+{
+	/* initialize random generator with different seed on different processor */
+	srand(vct->getCartesian_rank()+2);
+
+	const double q_sgn = (qom / fabs(qom));
+	const double q_factor =  q_sgn * grid->getVOL() / npcel;
+
+	for (int i=1; i< grid->getNXC()-1;i++)
+	for (int j=1; j< grid->getNYC()-1;j++)
+	for (int k=1; k< grid->getNZC()-1;k++){
+		const double q = q_factor * EMf->getRHOcs(i, j, k, ns);
+
+		// determine the drift velocity from current X
+		u0 = EMf->getJxs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (u0 > c){
+			cout << "DRIFT VELOCITY x > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		// determine the drift velocity from current Y
+		v0 = EMf->getJys(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (v0 > c){
+			cout << "DRIFT VELOCITY y > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		// determine the drift velocity from current Z
+		w0 = EMf->getJzs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+		if (w0 > c){
+			cout << "DRIFT VELOCITY z > c : B init field too high!" << endl;
+			MPI_Abort(MPI_COMM_WORLD,2);
+		}
+		for (int ii=0; ii < npcelx; ii++)
+		for (int jj=0; jj < npcely; jj++)
+		for (int kk=0; kk < npcelz; kk++){
+			double u,v,w;
+			sample_maxwellian(u, v, w, uth, vth, wth, u0, v0, w0);
+
+			const double x = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+			const double y = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+			const double z = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+
+			create_new_particle(u,v,w,q,x,y,z);
+		}
+	}
+}
+
+
+/** Maxellian random velocity and uniform spatial distribution - invert w0 for the upper current sheet */
+void Particles3D::maxwellianDoubleHarris(Field * EMf)
+{
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  assert_eq(_pcls.size(),0);
+
+  const double q_sgn = (qom / fabs(qom));
+  const double Ly_upper = Ly/2.0;
+  // multipled by charge density gives charge per particle
+  const double q_factor =  q_sgn * grid->getVOL() / npcel;
+
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+  {
+  for (int j = 1; j < grid->getNYC() - 1; j++)
+  for (int k = 1; k < grid->getNZC() - 1; k++)
+  {
+    const double q = q_factor * EMf->getRHOcs(i, j, k, ns);
+    for (int ii = 0; ii < npcelx; ii++)
+    for (int jj = 0; jj < npcely; jj++)
+    for (int kk = 0; kk < npcelz; kk++)
+    {
+
+      // could also sample positions randomly as in repopulate_particles();
+      const double x = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+      const double y = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+      const double z = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+      double u,v,w;
+      if(y> Ly_upper)  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, -1.0*w0);
+      else  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
+
+      create_new_particle(u,v,w,q,x,y,z);
+    }
+  }
   }
 }
 
@@ -541,128 +643,153 @@ void Particles3D::mover_PC(Field * EMf) {
 
 void Particles3D::mover_PC_AoS(Field * EMf)
 {
-#pragma omp parallel
-{
-  convertParticlesToAoS();
-  #pragma omp master
-  if (vct->getCartesian_rank() == 0) {
-    cout << "***AoS MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
-  }
-  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
+	#pragma omp parallel
+	{
+	  convertParticlesToAoS();
 
-  
-  const double dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
-  #pragma omp for schedule(static)
-  for (int pidx = 0; pidx < getNOP(); pidx++) {
-    // copy the particle
-    SpeciesParticle* pcl = &_pcls[pidx];
-    ALIGNED(pcl);
-    const double xorig = pcl->get_x();
-    const double yorig = pcl->get_y();
-    const double zorig = pcl->get_z();
-    const double uorig = pcl->get_u();
-    const double vorig = pcl->get_v();
-    const double worig = pcl->get_w();
-    double xavg = xorig;
-    double yavg = yorig;
-    double zavg = zorig;
-    double uavg;
-    double vavg;
-    double wavg;
-    // calculate the average velocity iteratively
-    for (int innter = 0; innter < NiterMover; innter++) {
+	  /*
+          #pragma omp master
+	  if (vct->getCartesian_rank() == 0) {
+		cout << "***AoS MOVER species " << ns << " *** Max." << NiterMover << " ITERATIONS   ****" << endl;
+	  }*/
 
-      // compute weights for field components
-      //
-      double weights[8] ALLOC_ALIGNED;
-      int cx,cy,cz;
-      grid->get_safe_cell_and_weights(xavg,yavg,zavg,cx,cy,cz,weights);
+	  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
+	  //int sum_innter = 0;
 
-      const double* field_components[8] ALLOC_ALIGNED;
-      get_field_components_for_cell(field_components,fieldForPcls,cx,cy,cz);
+	  const double dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
+	  #pragma omp for schedule(static)
+	  for (int pidx = 0; pidx < getNOP(); pidx++) {
+		// copy the particle
+		SpeciesParticle* pcl = &_pcls[pidx];
+		ALIGNED(pcl);
+		const double xorig = pcl->get_x();
+		const double yorig = pcl->get_y();
+		const double zorig = pcl->get_z();
+		const double uorig = pcl->get_u();
+		const double vorig = pcl->get_v();
+		const double worig = pcl->get_w();
+		double xavg = xorig;
+		double yavg = yorig;
+		double zavg = zorig;
+		double uavg, vavg, wavg;
+		double uavg_old=uorig;
+		double vavg_old=vorig;
+		double wavg_old=worig;
 
-      //double Exl=0,Exl=0,Ezl=0,Bxl=0,Byl=0,Bzl=0;
-      //for(int c=0; c<8; c++)
-      //{
-      //  Bxl += weights[c] * field_components[c][0];
-      //  Byl += weights[c] * field_components[c][1];
-      //  Bzl += weights[c] * field_components[c][2];
-      //  Exl += weights[c] * field_components[c][0+DFIELD_3or4];
-      //  Eyl += weights[c] * field_components[c][1+DFIELD_3or4];
-      //  Ezl += weights[c] * field_components[c][2+DFIELD_3or4];
-      //}
-      // causes compile error on icpc
-      //double sampled_field[8]={0,0,0,0,0,0,0,0} ALLOC_ALIGNED;
-      double sampled_field[8] ALLOC_ALIGNED;
-      for(int i=0;i<8;i++) sampled_field[i]=0;
-      double& Bxl=sampled_field[0];
-      double& Byl=sampled_field[1];
-      double& Bzl=sampled_field[2];
-      double& Exl=sampled_field[0+DFIELD_3or4];
-      double& Eyl=sampled_field[1+DFIELD_3or4];
-      double& Ezl=sampled_field[2+DFIELD_3or4];
-      const int num_field_components=2*DFIELD_3or4;
-      for(int c=0; c<8; c++)
-      {
-        const double* field_components_c=field_components[c];
-        ASSUME_ALIGNED(field_components_c);
-        const double weights_c = weights[c];
-        #pragma simd
-        for(int i=0; i<num_field_components; i++)
-        {
-          sampled_field[i] += weights_c*field_components_c[i];
-        }
-      }
-      const double Omx = qdto2mc*Bxl;
-      const double Omy = qdto2mc*Byl;
-      const double Omz = qdto2mc*Bzl;
+		// calculate the average velocity iteratively
+		//for (int innter = 0; innter < NiterMover; innter++) {
+		int   innter = 0;
+		const double PC_err_2 = 1E-12;//square of error tolerance
+		double currErr = PC_err_2+1.; //initialize to a larger value
 
-      // end interpolation
-      const pfloat omsq = (Omx * Omx + Omy * Omy + Omz * Omz);
-      const pfloat denom = 1.0 / (1.0 + omsq);
-      // solve the position equation
-      const pfloat ut = uorig + qdto2mc * Exl;
-      const pfloat vt = vorig + qdto2mc * Eyl;
-      const pfloat wt = worig + qdto2mc * Ezl;
-      //const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
-      const pfloat udotOm = ut * Omx + vt * Omy + wt * Omz;
-      // solve the velocity equation 
-      uavg = (ut + (vt * Omz - wt * Omy + udotOm * Omx)) * denom;
-      vavg = (vt + (wt * Omx - ut * Omz + udotOm * Omy)) * denom;
-      wavg = (wt + (ut * Omy - vt * Omx + udotOm * Omz)) * denom;
-      // update average position
-      xavg = xorig + uavg * dto2;
-      yavg = yorig + vavg * dto2;
-      zavg = zorig + wavg * dto2;
-    }                           // end of iteration
-    // update the final position and velocity
-    //
-    if(cap_velocity())
-    {
-      bool cap = (abs(uavg)>umax || abs(vavg)>vmax || abs(wavg)>wmax)
-        ? true : false;
-      // we could do something more smooth or sophisticated
-      if(builtin_expect(cap,false))
-      {
-        if(true)
-        {
-          dprintf("capping velocity: abs(%g,%g,%g)>(%g,%g,%g)",
-            uavg,vavg,wavg,umax,vmax,wmax);
-        }
-        if(uavg>umax) uavg=umax; else if(uavg<umin) uavg=umin;
-        if(vavg>vmax) vavg=vmax; else if(vavg<vmin) vavg=vmin;
-        if(wavg>wmax) wavg=wmax; else if(wavg<wmin) wavg=wmin;
-      }
-    }
-    //
-    pcl->set_x(xorig + uavg * dt);
-    pcl->set_y(yorig + vavg * dt);
-    pcl->set_z(zorig + wavg * dt);
-    pcl->set_u(2.0 * uavg - uorig);
-    pcl->set_v(2.0 * vavg - vorig);
-    pcl->set_w(2.0 * wavg - worig);
-  }                             // END OF ALL THE PARTICLES
-}
+		// calculate the average velocity iteratively
+		while(currErr> PC_err_2 &&  innter < NiterMover){
+
+		  // compute weights for field components
+		  //
+		  double weights[8] ALLOC_ALIGNED;
+		  int cx,cy,cz;
+		  grid->get_safe_cell_and_weights(xavg,yavg,zavg,cx,cy,cz,weights);
+
+		  const double* field_components[8] ALLOC_ALIGNED;
+		  get_field_components_for_cell(field_components,fieldForPcls,cx,cy,cz);
+
+		  //double Exl=0,Exl=0,Ezl=0,Bxl=0,Byl=0,Bzl=0;
+		  //for(int c=0; c<8; c++)
+		  //{
+		  //  Bxl += weights[c] * field_components[c][0];
+		  //  Byl += weights[c] * field_components[c][1];
+		  //  Bzl += weights[c] * field_components[c][2];
+		  //  Exl += weights[c] * field_components[c][0+DFIELD_3or4];
+		  //  Eyl += weights[c] * field_components[c][1+DFIELD_3or4];
+		  //  Ezl += weights[c] * field_components[c][2+DFIELD_3or4];
+		  //}
+		  // causes compile error on icpc
+		  //double sampled_field[8]={0,0,0,0,0,0,0,0} ALLOC_ALIGNED;
+		  double sampled_field[8] ALLOC_ALIGNED;
+		  for(int i=0;i<8;i++) sampled_field[i]=0;
+		  double& Bxl=sampled_field[0];
+		  double& Byl=sampled_field[1];
+		  double& Bzl=sampled_field[2];
+		  double& Exl=sampled_field[0+DFIELD_3or4];
+		  double& Eyl=sampled_field[1+DFIELD_3or4];
+		  double& Ezl=sampled_field[2+DFIELD_3or4];
+		  const int num_field_components=2*DFIELD_3or4;
+		  for(int c=0; c<8; c++)
+		  {
+			const double* field_components_c=field_components[c];
+			ASSUME_ALIGNED(field_components_c);
+			const double weights_c = weights[c];
+			#pragma simd
+			for(int i=0; i<num_field_components; i++)
+			{
+			  sampled_field[i] += weights_c*field_components_c[i];
+			}
+		  }
+		  const double Omx = qdto2mc*Bxl;
+		  const double Omy = qdto2mc*Byl;
+		  const double Omz = qdto2mc*Bzl;
+
+		  // end interpolation
+		  const pfloat omsq = (Omx * Omx + Omy * Omy + Omz * Omz);
+		  const pfloat denom = 1.0 / (1.0 + omsq);
+		  // solve the position equation
+		  const pfloat ut = uorig + qdto2mc * Exl;
+		  const pfloat vt = vorig + qdto2mc * Eyl;
+		  const pfloat wt = worig + qdto2mc * Ezl;
+		  //const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
+		  const pfloat udotOm = ut * Omx + vt * Omy + wt * Omz;
+		  // solve the velocity equation
+		  uavg = (ut + (vt * Omz - wt * Omy + udotOm * Omx)) * denom;
+		  vavg = (vt + (wt * Omx - ut * Omz + udotOm * Omy)) * denom;
+		  wavg = (wt + (ut * Omy - vt * Omx + udotOm * Omz)) * denom;
+		  // update average position
+		  xavg = xorig + uavg * dto2;
+		  yavg = yorig + vavg * dto2;
+		  zavg = zorig + wavg * dto2;
+
+		  innter ++;
+		  currErr = ((uavg_old-uavg)*(uavg_old-uavg)+(vavg_old-vavg)*(vavg_old-vavg)+(wavg_old-wavg)*(wavg_old-wavg)) /
+								 (uavg_old*uavg_old+vavg_old*vavg_old+wavg_old*wavg_old);
+		  // capture the new velocity for the next iteration
+		  uavg_old = uavg;
+		  vavg_old = vavg;
+		  wavg_old = wavg;
+
+		}// end of iteration
+
+		//sum_innter +=innter;
+
+		// update the final position and velocity
+		if(cap_velocity())
+		{
+		  bool cap = (abs(uavg)>umax || abs(vavg)>vmax || abs(wavg)>wmax)? true : false;
+		  // we could do something more smooth or sophisticated
+		  if(builtin_expect(cap,false))
+		  {
+			if(true)
+			{
+			  dprintf("capping velocity: abs(%g,%g,%g)>(%g,%g,%g)",
+				uavg,vavg,wavg,umax,vmax,wmax);
+			}
+			if(uavg>umax) uavg=umax; else if(uavg<umin) uavg=umin;
+			if(vavg>vmax) vavg=vmax; else if(vavg<vmin) vavg=vmin;
+			if(wavg>wmax) wavg=wmax; else if(wavg<wmin) wavg=wmin;
+		  }
+		}
+		//
+		pcl->set_x(xorig + uavg * dt);
+		pcl->set_y(yorig + vavg * dt);
+		pcl->set_z(zorig + wavg * dt);
+		pcl->set_u(2.0 * uavg - uorig);
+		pcl->set_v(2.0 * vavg - vorig);
+		pcl->set_w(2.0 * wavg - worig);
+	  }// END OF ALL THE PARTICLES
+	  /*
+	  if (vct->getCartesian_rank() == 0) {
+		cout << "***AoS MOVER species " << ns << " *** Avg." << (double)sum_innter/((double)getNOP()) << " ITERATIONS   ****" << endl;
+	  }*/
+	}
 }
 
 
@@ -868,7 +995,7 @@ void Particles3D::mover_PC_AoS_Relativistic(Field * EMf)
 	  localAvgArr[0]=local_subcycle;
 	  localAvgArr[1]=local_innter;
 	  double globalAvgArr[2];
-	  MPI_Reduce(&localAvgArr, &globalAvgArr, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	  MPI_Reduce(&localAvgArr, &globalAvgArr, 2, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
 	  if (MPIdata::get_rank() == 0)
 		  cout << "*** Relativistic AoS MOVER with Subcycling  species " << ns << " ***" 
 		  << globalAvgArr[0]/MPIdata::get_nprocs()  << " subcyles ***" << globalAvgArr[1]/MPIdata::get_nprocs()<< " ITERATIONS   ****" << endl;

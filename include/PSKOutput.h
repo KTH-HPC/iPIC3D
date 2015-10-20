@@ -1,3 +1,23 @@
+/* iPIC3D was originally developed by Stefano Markidis and Giovanni Lapenta. 
+ * This release was contributed by Alec Johnson and Ivy Bo Peng.
+ * Publications that use results from iPIC3D need to properly cite  
+ * 'S. Markidis, G. Lapenta, and Rizwan-uddin. "Multi-scale simulations of 
+ * plasma with iPIC3D." Mathematics and Computers in Simulation 80.7 (2010): 1509-1519.'
+ *
+ *        Copyright 2015 KTH Royal Institute of Technology
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at 
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*******************************************************************************************
   PSKOutput.h  -  Framework classes for PARSEK output
   -------------------
@@ -14,7 +34,6 @@ developers: D. Burgess, June/July 2006
 #include <list>
 
 #include "errors.h"
-#include "Grid.h"
 #include "PSKException.h"
 #include "Particles3Dcomm.h"
 #include "Field.h"
@@ -783,11 +802,7 @@ public:
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
-        if (_col->getTrackParticleID(i) == true)
-          this->output_adaptor.write("/particles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getParticleIDall());
-
-        else if (_vct->getCartesian_rank() == 0)
-          cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(_part[i]->getNOP()), _part[i]->getParticleIDall());
       }
     }
     // Test Particle ID
@@ -799,20 +814,18 @@ public:
       }
     }
     else if (tag.find("ID", 0) != string::npos & sample != 0) {
-      std::vector <longid>ID;
+      std::vector <double>ID;
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
-        const longid* pclID = _part[i]->getParticleIDall();
+        const double* pclID = _part[i]->getParticleIDall();
         const int num_samples = _part[i]->getNOP()/sample;
         ID.reserve(num_samples);
-        if (_col->getTrackParticleID(i) == true) {
-          for (int n = 0; n < _part[i]->getNOP(); n += sample)
-            ID.push_back(pclID[n]);
-          this->output_adaptor.write("/particles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(ID.size()), &ID[0]);
-        }
-        else if (_vct->getCartesian_rank() == 0)
-          cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
+
+        for (int n = 0; n < _part[i]->getNOP(); n += sample)
+          ID.push_back(pclID[n]);
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(ID.size()), &ID[0]);
+
       }
     }
   }
