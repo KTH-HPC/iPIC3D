@@ -449,7 +449,7 @@ void Collective::ReadInput(string inputfile) {
   bcPfaceZright = config.read < int >("bcPfaceZright",1);
   bcPfaceZleft  = config.read < int >("bcPfaceZleft",1);
 
-
+#ifndef NO_HDF5 
   if (RESTART1) {               // you are restarting
     RestartDirName = config.read < string > ("RestartDirName","data");
     //ReadRestart(RestartDirName);
@@ -465,6 +465,7 @@ void Collective::ReadInput(string inputfile) {
     status = H5Dclose(dataset_id);
     status = H5Fclose(file_id);
   }
+#endif
 
   /*
   TrackParticleID = new bool[ns];
