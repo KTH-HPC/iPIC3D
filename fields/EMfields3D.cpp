@@ -5364,6 +5364,18 @@ double EMfields3D::getBenergy(void) {
   return (totalBenergy);
 }
 
+/*! get bulk kinetic energy*/
+double EMfields3D::getBulkEnergy(int is) {
+  double localBenergy = 0.0;
+  double totalBenergy = 0.0;
+  for (int i = 1; i < nxn - 2; i++)
+    for (int j = 1; j < nyn - 2; j++)
+      for (int k = 1; k < nzn - 2; k++)
+        localBenergy += .5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / (rhons[is][i][j][k]);
+
+  MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, (&get_vct())->getFieldComm());
+  return (totalBenergy);
+}
 
 /*! Print info about electromagnetic field */
 void EMfields3D::print(void) const {

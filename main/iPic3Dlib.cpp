@@ -222,6 +222,7 @@ int c_Solver::Init(int argc, char **argv) {
 	  }
   }
   Ke = new double[ns];
+  BulkEnergy = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
   if (myrank == 0) {
@@ -569,16 +570,18 @@ void c_Solver::WriteConserved(int cycle) {
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
+      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
     }
     if (myrank == (nprocs-1)) {
       ofstream my_file(cq.c_str(), fstream::app);
-      if(cycle == 0)
-      my_file << "Cycle" << "\t"<< "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
-
-      my_file << cycle << "\t"  << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << "\t" << "Kenergy(species)" << "\t" << "BulkEnergy(species)";
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << "\t" << Ke[0] << "\t" << Ke[1] << "\t" << BulkEnergy[0] << "\t" << BulkEnergy[1] << endl;
+      for (int is = 0; is < ns; is++) my_file << "\t" << Ke[is];
+      for (int is = 0; is < ns; is++) my_file << "\t" << BulkEnergy[is];      
+      my_file << endl;
       my_file.close();
     }
   }

@@ -54,6 +54,7 @@ namespace iPic3D {
       outputWrapperFPP(0),
 #endif
       Ke(0),
+      BulkEnergy(0),
       momentum(0),
       Qremoved(0),
       my_clock(0)
@@ -96,6 +97,7 @@ namespace iPic3D {
     Particles3D   *part;
     Particles3D   *testpart;
     double        *Ke;
+    double        *BulkEnergy;
     double        *momentum;
     double        *Qremoved;
     Timing        *my_clock;
