@@ -577,8 +577,8 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == (nprocs-1)) {
       ofstream my_file(cq.c_str(), fstream::app);
-      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << "\t" << "Kenergy(species)" << "\t" << "BulkEnergy(species)";
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << "\t" << Ke[0] << "\t" << Ke[1] << "\t" << BulkEnergy[0] << "\t" << BulkEnergy[1] << endl;
+      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << "\t" << "Kenergy(species)" << "\t" << "BulkEnergy(species)" << endl;
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << "\t" << Ke[0] << "\t" << Ke[1] << "\t" << BulkEnergy[0] << "\t" << BulkEnergy[1];
       for (int is = 0; is < ns; is++) my_file << "\t" << Ke[is];
       for (int is = 0; is < ns; is++) my_file << "\t" << BulkEnergy[is];      
       my_file << endl;
