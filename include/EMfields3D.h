@@ -76,6 +76,8 @@ class EMfields3D                // :public Field
     void initDipole2D();
     /*! Initialise magnetic nulls */
     void initNullPoints();
+    /*! Initialise Taylor-Green flow */
+    void initTaylorGreen();
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(int cycle);
     /*! Image of Poisson Solver (for SOLVER) */
