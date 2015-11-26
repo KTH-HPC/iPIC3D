@@ -3615,6 +3615,62 @@ void EMfields3D::initNullPoints()
 	}
 }
 
+void EMfields3D::initTaylorGreen()
+{
+	const VirtualTopology3D *vct = &get_vct();
+	const Grid *grid = &get_grid();
+	if (restart1 ==0){
+		if (vct->getCartesian_rank() ==0){
+			cout << "----------------------------------------" << endl;
+			cout << "       Initialize Taylor-Green flow     " << endl;
+			cout << "----------------------------------------" << endl;
+			cout << "B0                               = " << B0x << endl;
+            cout << "u0                               = " << ue0 << endl;
+			for (int i=0; i < ns; i++){
+				cout << "rho species " << i <<" = " << rhoINIT[i] << endl;
+			}
+			cout << "Smoothing Factor = " << Smooth << endl;
+			cout << "-------------------------" << endl;
+		}
+
+        for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+		for (int k=0; k < nzn; k++){
+		   // initialize the density for species
+		   for (int is=0; is < ns; is++) {
+             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+             
+             // The flow will be initialized from currents
+             Jxs[is][i][j][k] = ue0 * rhons[is][i][j][k] * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * cos(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz); 
+             Jys[is][i][j][k] = -ue0 * rhons[is][i][j][k] * cos(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz);
+             Jzs[is][i][j][k] = 0.; // Z velocity is zero
+           }
+
+			// electric field
+			Ex[i][j][k] =  0.0;
+			Ey[i][j][k] =  0.0;
+			Ez[i][j][k] =  0.0;
+			// Magnetic field
+			Bxn[i][j][k] = B0x * cos(2.*M_PI*grid->getXN(i,j,k)/Lx) * sin(2.*M_PI*grid->getYN(i,j,k)/Ly) * sin(2.*M_PI*grid->getZN(i,j,k)/Lz);
+			Byn[i][j][k] = B0x * sin(2.*M_PI*grid->getXN(i,j,k)/Lx) * cos(2.*M_PI*grid->getYN(i,j,k)/Ly) * sin(2.*M_PI*grid->getZN(i,j,k)/Lz);
+			Bzn[i][j][k] = -2. * B0x  * sin(2.*M_PI*grid->getXN(i,j,k)/Lx) * sin(2.*M_PI*grid->getYN(i,j,k)/Ly) * cos(2.*M_PI*grid->getZN(i,j,k)/Lz);
+		}
+
+		for (int i=0; i <nxc; i++)
+		for (int j=0; j <nyc; j++)
+		for (int k=0; k <nzc; k++) {
+			Bxc[i][j][k] = B0x * cos(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * sin(2.*M_PI*grid->getZC(i,j,k)/Lz);
+			Byc[i][j][k] = B0x * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * cos(2.*M_PI*grid->getYC(i,j,k)/Ly) * sin(2.*M_PI*grid->getZC(i,j,k)/Lz);
+			Bzc[i][j][k] = -2. * B0x * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz);
+		}
+
+		for (int is=0 ; is<ns; is++)
+			grid->interpN2C(rhocs,is,rhons);
+	} else {
+		init();  // use the fields from restart file
+	}
+}
+
 void EMfields3D::initOriginalGEM()
 {
   const Grid *grid = &get_grid();
@@ -5364,6 +5420,18 @@ double EMfields3D::getBenergy(void) {
   return (totalBenergy);
 }
 
+/*! get bulk kinetic energy*/
+double EMfields3D::getBulkEnergy(int is) {
+  double localBenergy = 0.0;
+  double totalBenergy = 0.0;
+  for (int i = 1; i < nxn - 2; i++)
+    for (int j = 1; j < nyn - 2; j++)
+      for (int k = 1; k < nzn - 2; k++)
+        localBenergy += .5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / (rhons[is][i][j][k]);
+
+  MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, (&get_vct())->getFieldComm());
+  return (totalBenergy);
+}
 
 /*! Print info about electromagnetic field */
 void EMfields3D::print(void) const {

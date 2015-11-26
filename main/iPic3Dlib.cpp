@@ -145,6 +145,7 @@ int c_Solver::Init(int argc, char **argv) {
   else if (col->getCase()=="Dipole")    		EMf->initDipole();
   else if (col->getCase()=="Dipole2D")  		EMf->initDipole2D();
   else if (col->getCase()=="NullPoints")    	EMf->initNullPoints();
+  else if (col->getCase()=="TaylorGreen")    	EMf->initTaylorGreen();
   else if (col->getCase()=="RandomCase") {
     EMf->initRandomField();
     if (myrank==0) {
@@ -178,6 +179,7 @@ int c_Solver::Init(int argc, char **argv) {
       else if (col->getCase()=="BATSRUS")   		part[i].MaxwellianFromFluid(EMf,col,i);
 #endif
       else if (col->getCase()=="NullPoints")    	part[i].maxwellianNullPoints(EMf);
+      else if (col->getCase()=="TaylorGreen")    	part[i].maxwellianNullPoints(EMf); // Flow is initiated from the current prescribed on the grid.
       else if (col->getCase()=="GEMDoubleHarris")  	part[i].maxwellianDoubleHarris(EMf);
       else                                  		part[i].maxwellian(EMf);
       part[i].reserve_remaining_particle_IDs();
@@ -222,6 +224,7 @@ int c_Solver::Init(int argc, char **argv) {
 	  }
   }
   Ke = new double[ns];
+  BulkEnergy = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
   if (myrank == 0) {
@@ -569,16 +572,18 @@ void c_Solver::WriteConserved(int cycle) {
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
+      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
     }
     if (myrank == (nprocs-1)) {
       ofstream my_file(cq.c_str(), fstream::app);
-      if(cycle == 0)
-      my_file << "Cycle" << "\t"<< "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << endl;
-
-      my_file << cycle << "\t"  << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      if(cycle == 0) my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << "\t" << "Kenergy(species)" << "\t" << "BulkEnergy(species)" << endl;
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy;
+      for (int is = 0; is < ns; is++) my_file << "\t" << Ke[is];
+      for (int is = 0; is < ns; is++) my_file << "\t" << BulkEnergy[is];      
+      my_file << endl;
       my_file.close();
     }
   }

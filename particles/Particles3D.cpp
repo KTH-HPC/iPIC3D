@@ -283,7 +283,6 @@ void Particles3D::maxwellianNullPoints(Field * EMf)
 	}
 }
 
-
 /** Maxellian random velocity and uniform spatial distribution - invert w0 for the upper current sheet */
 void Particles3D::maxwellianDoubleHarris(Field * EMf)
 {
