@@ -2184,7 +2184,6 @@ void EMfields3D::MaxwellSource(double *bkrylov)
   eqValue(0.0, temp2Y, nxn, nyn, nzn);
   eqValue(0.0, temp2Z, nxn, nyn, nzn);
 
-
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct, this);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct, this);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct, this);
@@ -2192,14 +2191,14 @@ void EMfields3D::MaxwellSource(double *bkrylov)
   if (get_col().getCase()=="ForceFree") 		fixBforcefree();
   if (get_col().getCase()=="GEM")       		fixBnGEM();
   if (get_col().getCase()=="GEMnoPert") 		fixBnGEM();
-  if (get_col().getCase()=="GEMDoubleHarris") 	fixBnGEM();
+  if (get_col().getCase()=="GEMDoubleHarris") 	        fixBnGEM();
 
   // OpenBC:
   OpenBoundaryInflowB(Bxc,Byc,Bzc,nxc,nyc,nzc);
 
   if (get_col().getCase()=="GEM")       		fixBcGEM();
   if (get_col().getCase()=="GEMnoPert") 		fixBcGEM();
-  if (get_col().getCase()=="GEMDoubleHarris") 	fixBcGEM();
+  if (get_col().getCase()=="GEMDoubleHarris") 	        fixBcGEM();
 
   // prepare curl of B for known term of Maxwell solver: for the source term
   grid->curlC2N(tempXN, tempYN, tempZN, Bxc, Byc, Bzc);
@@ -2611,25 +2610,25 @@ void EMfields3D::fixBnGEM()
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxn; i++)
       for (int k = 0; k < nzn; k++) {
-        Bxn[i][nyc - 1][k] = B0x * tanh((grid->getYC(i, nyc - 1, k) - Ly / 2) / delta);
-        Bxn[i][nyc - 2][k] = Bxc[i][nyc - 1][k];
-        Bxn[i][nyc - 3][k] = Bxc[i][nyc - 1][k];
-        Byn[i][nyc - 1][k] = B0y;
-        Bzn[i][nyc - 1][k] = B0z;
-        Bzn[i][nyc - 2][k] = B0z;
-        Bzn[i][nyc - 3][k] = B0z;
+        Bxn[i][nyn - 1][k] = B0x * tanh((grid->getYC(i, nyc - 1, k) - Ly / 2) / delta);
+        Bxn[i][nyn - 2][k] = Bxn[i][nyn - 1][k];
+        Bxn[i][nyn - 3][k] = Bxn[i][nyn - 1][k];
+        Byn[i][nyn - 1][k] = B0y;
+        Bzn[i][nyn - 1][k] = B0z;
+        Bzn[i][nyn - 2][k] = B0z;
+        Bzn[i][nyn - 3][k] = B0z;
       }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
-    for (int i = 0; i < nxc; i++)
-      for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = B0x * tanh((grid->getYC(i, 0, k) - Ly / 2) / delta);
-        Bxc[i][1][k] = Bxc[i][0][k];
-        Bxc[i][2][k] = Bxc[i][0][k];
-        Byc[i][0][k] = B0y;
-        Bzc[i][0][k] = B0z;
-        Bzc[i][1][k] = B0z;
-        Bzc[i][2][k] = B0z;
+    for (int i = 0; i < nxn; i++)
+      for (int k = 0; k < nzn; k++) {
+        Bxn[i][0][k] = B0x * tanh((grid->getYC(i, 0, k) - Ly / 2) / delta);
+        Bxn[i][1][k] = Bxn[i][0][k];
+        Bxn[i][2][k] = Bxn[i][0][k];
+        Byn[i][0][k] = B0y;
+        Bzn[i][0][k] = B0z;
+        Bzn[i][1][k] = B0z;
+        Bzn[i][2][k] = B0z;
       }
   }
 }
@@ -3020,36 +3019,38 @@ void EMfields3D::calculateB()
 
   // calculate the curl of Eth
   grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+
   // update the magnetic field
   addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+
   // communicate ghost 
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct,this);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct,this);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct,this);
 
-  if (get_col().getCase()=="ForceFree") 		fixBforcefree();
-  if (get_col().getCase()=="GEM")       		fixBnGEM();
-  if (get_col().getCase()=="GEMnoPert") 		fixBnGEM();
-  if (get_col().getCase()=="GEMDoubleHarris") 	fixBnGEM();
-
   // OpenBC:
   OpenBoundaryInflowB(Bxc,Byc,Bzc,nxc,nyc,nzc);
+
+  if (get_col().getCase()=="GEM")       		fixBcGEM();
+  if (get_col().getCase()=="GEMnoPert") 		fixBcGEM();
+  if (get_col().getCase()=="GEMDoubleHarris")      	fixBcGEM();
 
   // interpolate C2N
   grid->interpC2N(Bxn, Bxc);
   grid->interpC2N(Byn, Byc);
   grid->interpC2N(Bzn, Bzc);
 
-  if (get_col().getCase()=="GEM")       		fixBcGEM();
-  if (get_col().getCase()=="GEMnoPert") 		fixBcGEM();
-  if (get_col().getCase()=="GEMDoubleHarris") 	fixBcGEM();
-
-
   communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct, this);
   communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct, this);
   communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct, this);
+
+  if (get_col().getCase()=="ForceFree") 		fixBforcefree();
+  if (get_col().getCase()=="GEM")       		fixBnGEM();
+  if (get_col().getCase()=="GEMnoPert") 		fixBnGEM();
+  if (get_col().getCase()=="GEMDoubleHarris") 	        fixBnGEM();
+
 }
 
 /*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
@@ -3615,62 +3616,6 @@ void EMfields3D::initNullPoints()
 	}
 }
 
-void EMfields3D::initTaylorGreen()
-{
-	const VirtualTopology3D *vct = &get_vct();
-	const Grid *grid = &get_grid();
-	if (restart1 ==0){
-		if (vct->getCartesian_rank() ==0){
-			cout << "----------------------------------------" << endl;
-			cout << "       Initialize Taylor-Green flow     " << endl;
-			cout << "----------------------------------------" << endl;
-			cout << "B0                               = " << B0x << endl;
-            cout << "u0                               = " << ue0 << endl;
-			for (int i=0; i < ns; i++){
-				cout << "rho species " << i <<" = " << rhoINIT[i] << endl;
-			}
-			cout << "Smoothing Factor = " << Smooth << endl;
-			cout << "-------------------------" << endl;
-		}
-
-        for (int i=0; i < nxn; i++)
-		for (int j=0; j < nyn; j++)
-		for (int k=0; k < nzn; k++){
-		   // initialize the density for species
-		   for (int is=0; is < ns; is++) {
-             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
-             
-             // The flow will be initialized from currents
-             Jxs[is][i][j][k] = ue0 * rhons[is][i][j][k] * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * cos(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz); 
-             Jys[is][i][j][k] = -ue0 * rhons[is][i][j][k] * cos(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz);
-             Jzs[is][i][j][k] = 0.; // Z velocity is zero
-           }
-
-			// electric field
-			Ex[i][j][k] =  0.0;
-			Ey[i][j][k] =  0.0;
-			Ez[i][j][k] =  0.0;
-			// Magnetic field
-			Bxn[i][j][k] = B0x * cos(2.*M_PI*grid->getXN(i,j,k)/Lx) * sin(2.*M_PI*grid->getYN(i,j,k)/Ly) * sin(2.*M_PI*grid->getZN(i,j,k)/Lz);
-			Byn[i][j][k] = B0x * sin(2.*M_PI*grid->getXN(i,j,k)/Lx) * cos(2.*M_PI*grid->getYN(i,j,k)/Ly) * sin(2.*M_PI*grid->getZN(i,j,k)/Lz);
-			Bzn[i][j][k] = -2. * B0x  * sin(2.*M_PI*grid->getXN(i,j,k)/Lx) * sin(2.*M_PI*grid->getYN(i,j,k)/Ly) * cos(2.*M_PI*grid->getZN(i,j,k)/Lz);
-		}
-
-		for (int i=0; i <nxc; i++)
-		for (int j=0; j <nyc; j++)
-		for (int k=0; k <nzc; k++) {
-			Bxc[i][j][k] = B0x * cos(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * sin(2.*M_PI*grid->getZC(i,j,k)/Lz);
-			Byc[i][j][k] = B0x * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * cos(2.*M_PI*grid->getYC(i,j,k)/Ly) * sin(2.*M_PI*grid->getZC(i,j,k)/Lz);
-			Bzc[i][j][k] = -2. * B0x * sin(2.*M_PI*grid->getXC(i,j,k)/Lx) * sin(2.*M_PI*grid->getYC(i,j,k)/Ly) * cos(2.*M_PI*grid->getZC(i,j,k)/Lz);
-		}
-
-		for (int is=0 ; is<ns; is++)
-			grid->interpN2C(rhocs,is,rhons);
-	} else {
-		init();  // use the fields from restart file
-	}
-}
-
 void EMfields3D::initOriginalGEM()
 {
   const Grid *grid = &get_grid();
@@ -3775,11 +3720,14 @@ void EMfields3D::initGEMDoubleHarris()
 	  const double yTd = yT/delta;
 	  // initialize the density for species
 	  for (int is=0; is < ns; is++){
+	    //dprintf("is=%d, DriftSpecies[is]=%d",is,DriftSpecies[is]);
 	    if (DriftSpecies[is]){
-	      const double sech_yBd = 1./cosh(yBd)+1e-5;
-	      const double sech_yTd = 1./cosh(yTd)+1e-5;
-	      rhons[is][i][j][k] = rhoINIT[is]*sech_yBd*sech_yBd/FourPI;
-	      rhons[is][i][j][k]+= rhoINIT[is]*sech_yTd*sech_yTd/FourPI;
+	      const double sech_yBd = 1./cosh(yBd);//+1e-5;
+	      const double sech_yTd = 1./cosh(yTd);//+1e-5;
+              if (is == 0 || is == 1)
+		rhons[is][i][j][k] = rhoINIT[is]*sech_yBd*sech_yBd/FourPI;
+	      else if (is == 2 || is == 3)
+                rhons[is][i][j][k] = rhoINIT[is]*sech_yTd*sech_yTd/FourPI;
 	    }
 	    else
 	      rhons[is][i][j][k] = rhoINIT[is]/FourPI;
@@ -5420,18 +5368,6 @@ double EMfields3D::getBenergy(void) {
   return (totalBenergy);
 }
 
-/*! get bulk kinetic energy*/
-double EMfields3D::getBulkEnergy(int is) {
-  double localBenergy = 0.0;
-  double totalBenergy = 0.0;
-  for (int i = 1; i < nxn - 2; i++)
-    for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++)
-        localBenergy += .5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / (rhons[is][i][j][k]);
-
-  MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, (&get_vct())->getFieldComm());
-  return (totalBenergy);
-}
 
 /*! Print info about electromagnetic field */
 void EMfields3D::print(void) const {
