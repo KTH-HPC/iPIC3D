@@ -76,6 +76,8 @@ class EMfields3D                // :public Field
     void initDipole2D();
     /*! Initialise magnetic nulls */
     void initNullPoints();
+    /*! Initialise Taylor-Green flow */
+    void initTaylorGreen();
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(int cycle);
     /*! Image of Poisson Solver (for SOLVER) */
@@ -287,6 +289,8 @@ class EMfields3D                // :public Field
     double getEenergy();
     /*! get the magnetic field energy */
     double getBenergy();
+    /*! get bulk kinetic energy */
+    double getBulkEnergy(int is);
 
     /*! fetch array for summing moments of thread i */
     Moments10& fetch_moments10Array(int i){
