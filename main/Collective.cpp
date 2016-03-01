@@ -288,7 +288,7 @@ void Collective::ReadInput(string inputfile) {
     wth[5] = wth0.f;
     u0[5] = u00.f;
     v0[5] = v00.f;
-    w0[1] = w00.f;
+    w0[5] = w00.f;
   }
 
   if (nstestpart > 0) {

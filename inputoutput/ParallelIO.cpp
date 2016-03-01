@@ -689,7 +689,7 @@ void WriteFieldsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopolo
 	const int    nPoints = dimX*dimY*dimZ;
 	MPI_File     fh;
 	MPI_Status   status;
-	const string fieldtags[]={"B", "E", "Je", "Ji"};
+	const string fieldtags[]={"B", "E", "Je", "Ji","Je2", "Ji3"};
 	const int    tagsize = size(fieldtags);
 	const string outputtag = col->getFieldOutputTag();
 
@@ -777,11 +777,48 @@ void WriteFieldsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopolo
 					   "SPACING %f %f %f\n"
 					   "POINT_DATA %d \n"
 					   "VECTORS Ji float\n", dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints);
+	 }else if (fieldtags[tagid].compare("Je2") == 0){
+		 for(int iz=0;iz<nzn-3;iz++)
+			  for(int iy=0;iy<nyn-3;iy++)
+				  for(int ix= 0;ix<nxn-3;ix++){
+					  fieldwritebuffer[iz][iy][ix][0] = (float)EMf->getJxs(ix+1, iy+1, iz+1, 2);
+					  fieldwritebuffer[iz][iy][ix][1] = (float)EMf->getJys(ix+1, iy+1, iz+1, 2);
+					  fieldwritebuffer[iz][iy][ix][2] = (float)EMf->getJzs(ix+1, iy+1, iz+1, 2);
+				  }
+
+		 //Write VTK header
+		 sprintf(header, "# vtk DataFile Version 2.0\n"
+				 "Electron2 current from iPIC3D\n"
+					   "BINARY\n"
+					   "DATASET STRUCTURED_POINTS\n"
+					   "DIMENSIONS %d %d %d\n"
+					   "ORIGIN 0 0 0\n"
+					   "SPACING %f %f %f\n"
+					   "POINT_DATA %d \n"
+					   "VECTORS Je float\n", dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints);
+
+	 }else if (fieldtags[tagid].compare("Ji3") == 0){
+		 for(int iz=0;iz<nzn-3;iz++)
+			  for(int iy=0;iy<nyn-3;iy++)
+				  for(int ix= 0;ix<nxn-3;ix++){
+					  fieldwritebuffer[iz][iy][ix][0] = (float)EMf->getJxs(ix+1, iy+1, iz+1, 3);
+					  fieldwritebuffer[iz][iy][ix][1] = (float)EMf->getJys(ix+1, iy+1, iz+1, 3);
+					  fieldwritebuffer[iz][iy][ix][2] = (float)EMf->getJzs(ix+1, iy+1, iz+1, 3);
+				  }
+
+		 //Write VTK header
+		 sprintf(header, "# vtk DataFile Version 2.0\n"
+				 "Ion3 current from iPIC3D\n"
+					   "BINARY\n"
+					   "DATASET STRUCTURED_POINTS\n"
+					   "DIMENSIONS %d %d %d\n"
+					   "ORIGIN 0 0 0\n"
+					   "SPACING %f %f %f\n"
+					   "POINT_DATA %d \n"
+					   "VECTORS Ji float\n", dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints);
 	 }
 
-
 	 if(EMf->isLittleEndian()){
-
 		 for(int iz=0;iz<nzn-3;iz++)
 			  for(int iy=0;iy<nyn-3;iy++)
 				  for(int ix= 0;ix<nxn-3;ix++){
@@ -825,10 +862,8 @@ void WriteFieldsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopolo
       }
       MPI_File_close(&fh);
 	}
-
-
-
 }
+
 void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, const string & outputTag ,int cycle, float*** momentswritebuffer){
 
 	//All VTK output at grid cells excluding ghost cells
@@ -843,14 +878,14 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 	const string momentstags[]={"rho", "PXX", "PXY", "PXZ", "PYY", "PYZ", "PZZ"};
 	const int    tagsize = size(momentstags);
 	const string outputtag = col->getMomentsOutputTag();
+	const int ns = col->getNs();
 
 	for(int tagid=0; tagid<tagsize; tagid++){
 		 if (outputtag.find(momentstags[tagid], 0) == string::npos) continue;
 
-		 for(int si=0;si<=1;si++){
+		 for(int si=0;si<ns;si++){
 			 char  header[1024];
 			 if (momentstags[tagid].compare("rho") == 0){
-
 				for(int iz=0;iz<nzn-3;iz++)
 				  for(int iy=0;iy<nyn-3;iy++)
 					  for(int ix= 0;ix<nxn-3;ix++)
@@ -858,7 +893,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 				//Write VTK header
 				sprintf(header, "# vtk DataFile Version 2.0\n"
-								   "%s density from iPIC3D\n"
+								   "%s%d density from iPIC3D\n"
 								   "BINARY\n"
 								   "DATASET STRUCTURED_POINTS\n"
 								   "DIMENSIONS %d %d %d\n"
@@ -866,17 +901,16 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"rhoe":"rhoi");
+					"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"rhoe":"rhoi");
 		 }else if(momentstags[tagid].compare("PXX") == 0){
-
 				for(int iz=0;iz<nzn-3;iz++)
 				  for(int iy=0;iy<nyn-3;iy++)
-					  for(int ix= 0;ix<nxn-3;ix++)
-						  momentswritebuffer[iz][iy][ix] = (float)EMf->getpXXsn(ix+1, iy+1, iz+1, si);
+				    for(int ix= 0;ix<nxn-3;ix++)
+				      momentswritebuffer[iz][iy][ix] = (float)EMf->getpXXsn(ix+1, iy+1, iz+1, si);
 
 				//Write VTK header
 				sprintf(header, "# vtk DataFile Version 2.0\n"
-								   "%s pressure PXX from iPIC3D\n"
+						"%s%d pressure PXX from iPIC3D\n"
 								   "BINARY\n"
 								   "DATASET STRUCTURED_POINTS\n"
 								   "DIMENSIONS %d %d %d\n"
@@ -884,7 +918,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXXe":"PXXi");
+					"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXXe":"PXXi");
 		}else if(momentstags[tagid].compare("PXY") == 0){
 
 			for(int iz=0;iz<nzn-3;iz++)
@@ -894,7 +928,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 			//Write VTK header
 			sprintf(header, "# vtk DataFile Version 2.0\n"
-							   "%s pressure PXY from iPIC3D\n"
+					"%s%d pressure PXY from iPIC3D\n"
 							   "BINARY\n"
 							   "DATASET STRUCTURED_POINTS\n"
 							   "DIMENSIONS %d %d %d\n"
@@ -902,7 +936,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 							   "SPACING %f %f %f\n"
 							   "POINT_DATA %d \n"
 							   "SCALARS %s float\n"
-							   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXYe":"PXYi");
+				"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXYe":"PXYi");
 		}else if(momentstags[tagid].compare("PXZ") == 0){
 
 			for(int iz=0;iz<nzn-3;iz++)
@@ -912,7 +946,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 			//Write VTK header
 			sprintf(header, "# vtk DataFile Version 2.0\n"
-							   "%s pressure PXZ from iPIC3D\n"
+							   "%s%d pressure PXZ from iPIC3D\n"
 							   "BINARY\n"
 							   "DATASET STRUCTURED_POINTS\n"
 							   "DIMENSIONS %d %d %d\n"
@@ -920,7 +954,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 							   "SPACING %f %f %f\n"
 							   "POINT_DATA %d \n"
 							   "SCALARS %s float\n"
-							   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXZe":"PXZi");
+				"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXZe":"PXZi");
 		}else if(momentstags[tagid].compare("PYY") == 0){
 
 			for(int iz=0;iz<nzn-3;iz++)
@@ -930,7 +964,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 			//Write VTK header
 			sprintf(header, "# vtk DataFile Version 2.0\n"
-							   "%s pressure PYY from iPIC3D\n"
+							   "%s%d pressure PYY from iPIC3D\n"
 							   "BINARY\n"
 							   "DATASET STRUCTURED_POINTS\n"
 							   "DIMENSIONS %d %d %d\n"
@@ -938,7 +972,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 							   "SPACING %f %f %f\n"
 							   "POINT_DATA %d \n"
 							   "SCALARS %s float\n"
-							   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PYYe":"PYYi");
+				"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PYYe":"PYYi");
 		}else if(momentstags[tagid].compare("PYZ") == 0){
 
 			for(int iz=0;iz<nzn-3;iz++)
@@ -948,7 +982,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 			//Write VTK header
 			sprintf(header, "# vtk DataFile Version 2.0\n"
-							   "%s pressure PYZ from iPIC3D\n"
+							   "%s%d pressure PYZ from iPIC3D\n"
 							   "BINARY\n"
 							   "DATASET STRUCTURED_POINTS\n"
 							   "DIMENSIONS %d %d %d\n"
@@ -956,7 +990,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 							   "SPACING %f %f %f\n"
 							   "POINT_DATA %d \n"
 							   "SCALARS %s float\n"
-							   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PYZe":"PYZi");
+				"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PYZe":"PYZi");
 		}else if(momentstags[tagid].compare("PZZ") == 0){
 
 			for(int iz=0;iz<nzn-3;iz++)
@@ -966,7 +1000,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 
 			//Write VTK header
 			sprintf(header, "# vtk DataFile Version 2.0\n"
-							   "%s pressure PZZ from iPIC3D\n"
+							   "%s%d pressure PZZ from iPIC3D\n"
 							   "BINARY\n"
 							   "DATASET STRUCTURED_POINTS\n"
 							   "DIMENSIONS %d %d %d\n"
@@ -974,7 +1008,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 							   "SPACING %f %f %f\n"
 							   "POINT_DATA %d \n"
 							   "SCALARS %s float\n"
-							   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PZZe":"PZZi");
+				"LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",si,dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PZZe":"PZZi");
 		}
 
 		 if(EMf->isLittleEndian()){
@@ -990,7 +1024,7 @@ void WriteMomentsVTK(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopol
 		  MPI_Offset disp = nelem*charsize;
 
 		  ostringstream filename;
-		  filename << col->getSaveDirName() << "/" << col->getSimName() << "_" << momentstags[tagid] << ((si==0)?"e":"i") << "_" << cycle << ".vtk";
+		  filename << col->getSaveDirName() << "/" << col->getSimName() << "_" << momentstags[tagid] << ((si%2==0)?"e":"i")<< si  << "_" << cycle << ".vtk";
 		  MPI_File_open(vct->getFieldComm(),filename.str().c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
 
 		  if (vct->getCartesian_rank()==0){
@@ -1208,7 +1242,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"rhoe":"rhoi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"rhoe":"rhoi");
 			 }else if(momentstags[tagid].compare("PXX") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1226,7 +1260,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXXe":"PXXi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXXe":"PXXi");
 			 }else if(momentstags[tagid].compare("PXY") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1244,7 +1278,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXYe":"PXYi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXYe":"PXYi");
 			}else if(momentstags[tagid].compare("PXZ") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1262,7 +1296,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PXZe":"PXZi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PXZe":"PXZi");
 			}else if(momentstags[tagid].compare("PYY") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1280,7 +1314,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PYYe":"PYYi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PYYe":"PYYi");
 			}else if(momentstags[tagid].compare("PYZ") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1298,7 +1332,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PYZe":"PYZi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PYZe":"PYZi");
 			}else if(momentstags[tagid].compare("PZZ") == 0){
 
 				for(int iz=0;iz<nzn-3;iz++)
@@ -1316,7 +1350,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 								   "SPACING %f %f %f\n"
 								   "POINT_DATA %d \n"
 								   "SCALARS %s float\n"
-								   "LOOKUP_TABLE default\n",(si==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si==0)?"PZZe":"PZZi");
+								   "LOOKUP_TABLE default\n",(si%2==0)?"Electron":"Ion",dimX,dimY,dimZ, spaceX,spaceY,spaceZ, nPoints,(si%2==0)?"PZZe":"PZZi");
 			}
 
 			 if(EMf->isLittleEndian()){
@@ -1332,7 +1366,7 @@ int  WriteMomentsVTKNonblk(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, V
 		  MPI_Offset disp = nelem*charsize;
 
 		  ostringstream filename;
-		  filename << col->getSaveDirName() << "/" << col->getSimName() << "_" << momentstags[tagid] << ((si==0)?"e":"i") << "_" << cycle << ".vtk";
+		  filename << col->getSaveDirName() << "/" << col->getSimName() << "_" << momentstags[tagid] << ((si%2==0)?"e":"i") << "_" << cycle << ".vtk";
 		  MPI_File_open(vct->getFieldComm(),filename.str().c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhArr[counter]);
 
 		  if (vct->getCartesian_rank()==0){
