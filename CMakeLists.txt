@@ -32,7 +32,7 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
      set(CMAKE_CXX_COMPILER "icpc")  
    endif()
    #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
-   set(CMAKE_CXX_FLAGS  "-O3  -DNO_HDF5 ") # -DPRINTPCL for printing particle subcycles  -DNO_HDF5 to disable output
+   set(CMAKE_CXX_FLAGS  "-O3 ") # -DPRINTPCL for printing particle subcycles  -DNO_HDF5 to disable output
 else()
    set(CMAKE_CXX_FLAGS "-O3")
 endif()
@@ -133,21 +133,21 @@ endif(DEFINED TEST_B)
 
 # Particle solver
 add_executable(
-        iPic3D
-        iPic3D.cpp
+        iPIC3D
+        iPIC3D.cpp
 )
 
 option(STATIC_LINK "Choose static link"  on)
 if(STATIC_LINK) 
 	add_library(
-	    iPic3Dlib      #name of the library
+	    iPIC3Dlib      #name of the library
 		STATIC	   #type of the library
 	    ${inc_files}    # stuff to build the library
 	    ${src_files}
 	)
 else()
 	add_library(
-	    iPic3Dlib      #name of the library
+	    iPIC3Dlib      #name of the library
 		SHARED	   #type of the library
 	    ${inc_files}    # stuff to build the library
 	    ${src_files}
@@ -159,7 +159,7 @@ endif()
 # Link external libraries
 #
 target_link_libraries(
-         iPic3Dlib
+         iPIC3Dlib
          ${HDF5_LIBRARIES}
          ${HDF5_HL_LIBRARIES}
          ${MPI_LIBRARIES}
@@ -167,17 +167,15 @@ target_link_libraries(
 )
 
 target_link_libraries(
-         iPic3D
-         iPic3Dlib
-         #pmi
+         iPIC3D
+         iPIC3Dlib
 )
 
 ## to save the executable in the folder where the CMakeLists.txt file is, i.e. CMAKE_CURRENT_SOURCE_DIR
-set_target_properties(iPic3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(iPIC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 ## debug releases have a _d appended to the executable
-set_target_properties(iPic3D PROPERTIES DEBUG_POSTFIX "_d")
-
+set_target_properties(iPIC3D PROPERTIES DEBUG_POSTFIX "_d")
 
 message("Which system am I compiling for:")
 message("MYHOSTNAME is ${myhostname}")

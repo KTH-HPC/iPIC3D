@@ -283,6 +283,7 @@ void Particles3D::maxwellianNullPoints(Field * EMf)
 	}
 }
 
+
 /** Maxellian random velocity and uniform spatial distribution - invert w0 for the upper current sheet */
 void Particles3D::maxwellianDoubleHarris(Field * EMf)
 {
@@ -313,7 +314,7 @@ void Particles3D::maxwellianDoubleHarris(Field * EMf)
       const double z = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
 
       double u,v,w;
-      if(y> Ly_upper)  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, -1.0*w0);
+      if(y> Ly_upper)  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);//-1.0*w0
       else  sample_maxwellian(u,v,w,uth, vth, wth,u0, v0, w0);
 
       create_new_particle(u,v,w,q,x,y,z);
