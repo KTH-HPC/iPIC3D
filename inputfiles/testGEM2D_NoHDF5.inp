@@ -139,7 +139,7 @@ bcPHIfaceZleft  = 1
 # GMRES solver stopping criterium tolerance 
    GMREStol = 1E-3
 # mover predictor corrector iteration 
-   NiterMover  = 3
+   NiterMover  = 5
 # Output for field
    FieldOutputCycle = 5
    FieldOutputTag   = B+E+Je+Ji

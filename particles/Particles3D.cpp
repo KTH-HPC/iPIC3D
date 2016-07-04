@@ -647,14 +647,15 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 	{
 	  convertParticlesToAoS();
 
-	  /*
+#ifdef PRINTPCL   
           #pragma omp master
 	  if (vct->getCartesian_rank() == 0) {
 		cout << "***AoS MOVER species " << ns << " *** Max." << NiterMover << " ITERATIONS   ****" << endl;
-	  }*/
-
+	  }
+	  int sum_innter = 0;
+#endif
 	  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
-	  //int sum_innter = 0;
+	
 
 	  const double dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
 	  #pragma omp for schedule(static)
@@ -758,7 +759,7 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 
 		}// end of iteration
 
-		//sum_innter +=innter;
+		sum_innter +=innter;
 
 		// update the final position and velocity
 		if(cap_velocity())
@@ -785,10 +786,12 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 		pcl->set_v(2.0 * vavg - vorig);
 		pcl->set_w(2.0 * wavg - worig);
 	  }// END OF ALL THE PARTICLES
-	  /*
+	
+#ifdef PRINTPCL  
 	  if (vct->getCartesian_rank() == 0) {
 		cout << "***AoS MOVER species " << ns << " *** Avg." << (double)sum_innter/((double)getNOP()) << " ITERATIONS   ****" << endl;
-	  }*/
+	  }
+#endif
 	}
 }
 
