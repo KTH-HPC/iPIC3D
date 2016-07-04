@@ -25,7 +25,7 @@
 
 /**
  * 
- * series of methods for timing and profiling PARSEK 
+ * series of methods for timing and profiling
  * @date Fri Jun 4 2007
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 2.0
@@ -76,17 +76,17 @@ void Timing::stopTiming() {
   if (rank_id == 0) {
     // replace %g with %11.3e?
     printf( "\n\n*** SIMULATION ENDED SUCESSFULLY ***\n"
-            " PARSEK Simulation Time: %g sec (%g hours)\n***\n\n",
+            " Simulation Time: %g sec (%g hours)\n***\n\n",
             texecution, texecution / 3600);
     //cout << endl;
     //cout << endl;
     //cout << "*** SIMULATION ENDED SUCESSFULLY ***" << endl;
-    //cout << " PARSEK Simulation Time: " << texecution << " sec" << " (" << texecution / 3600 << " hours)" << endl;
+    //cout << " Simulation Time: " << texecution << " sec" << " (" << texecution / 3600 << " hours)" << endl;
     //cout << "***" << endl;
     //cout << endl;
   }
   // close the log file
-  // MPE_Finish_log("PARSEK_LOG");
+  // MPE_Finish_log("iPIC3D_LOG");
 }
 
 /** start timing the mover */
