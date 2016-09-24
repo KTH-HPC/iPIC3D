@@ -1920,7 +1920,7 @@ void Particles3D::openbc_particles_inflow()
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++){
 
-    	/*
+    	
     	//The below is uniformly distributed in location
 		for (int ii=0; ii < npcelx; ii++)
 		  for (int jj=0; jj < npcely; jj++)
@@ -2281,7 +2281,7 @@ double Particles3D::delta_f(double u, double v, double w, double x, double y, do
     a3[l + lmax] += df0_dvpar(vpar, vperp) * bessel_Jn_array[l];
   }
 
-  deltaf = (0.0, 0.0);
+  //deltaf = (0.0, 0.0);
   for (register int l = -lmax; l < lmax + 1; l++) {
     deltaf += (a3[l + lmax] * Ex_mod * exp(I * Ex_phase) + a1[l + lmax] * Ey_mod * exp(I * Ey_phase) + a2[l + lmax] * Ez_mod * exp(I * Ez_phase)) / (kpar * vpar + l * om_c - omega) * exp(-I * phi * (double) l);
   }

@@ -32,7 +32,10 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
      set(CMAKE_CXX_COMPILER "icpc")  
    endif()
    #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
-   set(CMAKE_CXX_FLAGS  "-O3 -h noomp -DNO_HDF5  ") # -DPRINTPCL for printing particle subcycles  -DNO_HDF5 to disable output
+   # -DPRINTPCL for printing particle subcycles 
+   #-DNO_HDF5 to disable output 
+   #-h noomp if running on bluewaters
+   set(CMAKE_CXX_FLAGS  "-O3 -DNO_HDF5 ")
 else()
    set(CMAKE_CXX_FLAGS "-O3")
 endif()

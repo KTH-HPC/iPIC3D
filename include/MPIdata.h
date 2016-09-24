@@ -29,7 +29,9 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 
 #ifndef MPIDATA_H
 #define MPIDATA_H
-
+#ifndef NO_MPI
+#include <mpi.h>
+#endif
 /**
  * MPI Data Structure. This class contains:
  *
@@ -69,7 +71,10 @@ public:
 public:
   static int get_rank(){return instance().rank;}
   static int get_nprocs(){return instance().nprocs;}
+  static int get_PicGlobalComm(){return instance().PIC_COMM;}
 private:
+    /*iPIC3D Global Communicator*/
+  static MPI_Comm PIC_COMM;
   /** rank of the process */
   static int rank;
   /** number of processes */

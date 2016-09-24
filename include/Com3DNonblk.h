@@ -35,11 +35,9 @@ developers           : Stefano Markidis, Ivy Bo Peng
 #include "mpi.h"
 #include "BcFields3D.h"
 #include "VCtopology3D.h"
-#include "TimeTasks.h"
 #include "ipicdefs.h"
 #include "Alloc.h"
 #include "debug.h"
-//#include "parallel.h"
 #include "EMfields3D.h"
 
 /** communicate ghost cells (FOR NODES) */

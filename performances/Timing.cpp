@@ -22,7 +22,7 @@
 #include "stdio.h"
 #include "Timing.h"
 #include "ipicdefs.h"
-
+#include "MPIdata.h"
 /**
  * 
  * series of methods for timing and profiling
@@ -56,7 +56,7 @@ Timing::Timing(int my_rank) {
   // MPE_Describe_state(event2a,event2b,"Field","blue"); // the mover is blue in the visualizer
   // MPE_Describe_state(event3a,event3b,"Interp P->G","yellow"); // the interpolation particle->Grid is yellow in the visualizer
   // }
-  former_MPI_Barrier(MPI_COMM_WORLD);
+    former_MPI_Barrier(MPIdata::get_PicGlobalComm());
   // start the log
   // MPE_Start_log();
 
@@ -65,12 +65,12 @@ Timing::Timing(int my_rank) {
 /** start the timer */
 void Timing::startTiming() {
   ttick = MPI_Wtick();
-  former_MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPIdata::get_PicGlobalComm());
   tstart = MPI_Wtime();
 }
 /** stop the timer */
 void Timing::stopTiming() {
-  former_MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPIdata::get_PicGlobalComm());
   tend = MPI_Wtime();
   texecution = tend - tstart;
   if (rank_id == 0) {

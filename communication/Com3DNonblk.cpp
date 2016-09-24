@@ -23,7 +23,10 @@
 //isCenterFlag: 1 communicateCenter; 0 communicateNode
 void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTopology3D * vct, EMfields3D *EMf,bool isCenterFlag, bool isFaceOnlyFlag, bool needInterp, bool isParticle)
 {
-	MPI_Errhandler_set(MPI_COMM_WORLD,MPI_ERRORS_RETURN);
+    const MPI_Comm comm       = isParticle ?vct->getParticleComm()      :vct->getFieldComm();
+#ifdef DEBUG
+	MPI_Errhandler_set(comm,MPI_ERRORS_RETURN);
+#endif
     MPI_Status  stat[12];
     MPI_Request reqList[12];				  //at most 6 requests x 2 (send recv)
     int communicationCnt[6] = {0,0,0,0,0,0};  //1 if there communication on that dir
@@ -31,7 +34,6 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 
     const int tag_XL=1,tag_YL=2,tag_ZL=3,tag_XR=4,tag_YR=5,tag_ZR=6;//To address same rank as left and right neighbour in periodic case
     const int myrank    	  = vct->getCartesian_rank();
-    const MPI_Comm comm       = isParticle ?vct->getParticleComm()      :vct->getFieldComm();
     const int right_neighborX = isParticle ?vct->getXright_neighbor_P() :vct->getXright_neighbor();
     const int left_neighborX  = isParticle ?vct->getXleft_neighbor_P()  :vct->getXleft_neighbor();
     const int right_neighborY = isParticle ?vct->getYright_neighbor_P() :vct->getYright_neighbor();
@@ -134,12 +136,14 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
             int error_code = stat[si].MPI_ERROR;
             if (error_code != MPI_SUCCESS) {
                 stopFlag = true;
+#ifdef DEBUG
                 char error_string[100];
                 int length_of_error_string, error_class;
 
                 MPI_Error_class(error_code, &error_class);
                 MPI_Error_string(error_class, error_string, &length_of_error_string);
                 dprintf("MPI_Waitall error at %d  %s\n",si, error_string);
+#endif
             }
         }
         if(stopFlag) exit (EXIT_FAILURE);
@@ -360,12 +364,14 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 				int error_code = stat[si].MPI_ERROR;
 				if (error_code != MPI_SUCCESS) {
 					stopFlag = true;
+#ifdef DEBUG
 					char error_string[100];
 					int length_of_error_string, error_class;
 
 					MPI_Error_class(error_code, &error_class);
 					MPI_Error_string(error_class, error_string, &length_of_error_string);
 					dprintf("MPI_Waitall error at %d  %s\n",si, error_string);
+#endif
 				}
 			}
 			if(stopFlag) exit (EXIT_FAILURE);;
@@ -467,12 +473,14 @@ void NBDerivedHaloComm(int nx, int ny, int nz, double ***vector,const VirtualTop
 				int error_code = stat[si].MPI_ERROR;
 				if (error_code != MPI_SUCCESS) {
 					stopFlag = true;
+#ifdef DEBUG
 					char error_string[100];
 					int length_of_error_string, error_class;
 
 					MPI_Error_class(error_code, &error_class);
 					MPI_Error_string(error_class, error_string, &length_of_error_string);
 					dprintf("MPI_Waitall error at %d  %s\n",si, error_string);
+#endif
 				}
 			}
 			if(stopFlag) exit (EXIT_FAILURE);

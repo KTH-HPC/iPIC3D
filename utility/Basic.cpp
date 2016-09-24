@@ -27,12 +27,12 @@
 #include "errors.h"
 
 /** method to calculate the parallel dot product with vect1, vect2 having the ghost cells*/
-double dotP(const double *vect1, const double *vect2, int n) {
+double dotP(const double *vect1, const double *vect2, int n,MPI_Comm* comm) {
   double result = 0;
   double local_result = 0;
   for (register int i = 0; i < n; i++)
     local_result += vect1[i] * vect2[i];
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, *comm);
   return (result);
 
 }
@@ -70,6 +70,7 @@ double norm2(const double *vect, int nx) {
 
 
 /** method to calculate the parallel dot product */
+/*
 double norm2P(const arr3_double vect, int nx, int ny, int nz) {
   double result = 0;
   double local_result = 0;
@@ -80,8 +81,10 @@ double norm2P(const arr3_double vect, int nx, int ny, int nz) {
 
   MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (result);
-}
+}*/
+
 /** method to calculate the parallel norm of a vector on different processors with the ghost cell */
+/*
 double norm2P(const double *vect, int n) {
   double result = 0;
   double local_result = 0;
@@ -89,14 +92,14 @@ double norm2P(const double *vect, int n) {
     local_result += vect[i] * vect[i];
   MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (result);
-}
+}*/
 /** method to calculate the parallel norm of a vector on different processors with the gost cell*/
-double normP(const double *vect, int n) {
+double normP(const double *vect, int n,MPI_Comm* comm) {
   double result = 0.0;
   double local_result = 0.0;
   for (register int i = 0; i < n; i++)
     local_result += vect[i] * vect[i];
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, *comm);
   return (sqrt(result));
 
 }

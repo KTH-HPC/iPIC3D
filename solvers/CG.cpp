@@ -23,6 +23,9 @@
 #include "CG.h"
 #include "Basic.h"
 #include "parallel.h"
+//#include "ipicdefs.h"
+#include "EMfields3D.h"
+#include "VCtopology3D.h"
 
 /**
  * 
@@ -44,6 +47,8 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, FIELD
   eqValue(0.0, v, xkrylovlen);
   eqValue(0.0, z, xkrylovlen);
   eqValue(0.0, im, xkrylovlen);
+    
+  MPI_Comm fieldcomm = (field->get_vct()).getFieldComm();
 
   int i = 0;
   bool CONVERGED = false;
@@ -55,7 +60,7 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, FIELD
   sub(r, b, im, xkrylovlen);
   // v = r
   eq(v, r, xkrylovlen);
-  c = dotP(r, r, xkrylovlen);
+  c = dotP(r, r, xkrylovlen,&fieldcomm);
   initial_error = sqrt(c);
   if (is_output_thread())
     printf("CG Initial error: %g\n", initial_error);
@@ -64,12 +69,12 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, FIELD
     return (true);
   while (i < maxit) {
     (field->*FunctionImage) (z, v);
-    t = c / dotP(v, z, xkrylovlen);
+    t = c / dotP(v, z, xkrylovlen,&fieldcomm);
     // x(i+1) = x + t*v
     addscale(t, xkrylov, v, xkrylovlen);
     // r(i+1) = r - t*z
     addscale(-t, r, z, xkrylovlen);
-    d = dotP(r, r, xkrylovlen);
+    d = dotP(r, r, xkrylovlen,&fieldcomm);
     if (CGVERBOSE && is_output_thread())
     {
       printf("Iteration # %d - norm of residual relative to initial error %g\n",

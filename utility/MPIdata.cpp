@@ -21,12 +21,8 @@
 #ifndef NO_MPI
   #include <mpi.h>
 #endif
-//#include <stdio.h>
 #include <assert.h>
 #include "MPIdata.h"
-#ifndef NO_MPI
-#include <mpi.h>
-#endif
 #include "ompdefs.h" // for omp_get_max_threads
 
 // code to check that init() is called before instance()
@@ -34,6 +30,7 @@
 // no need for this to have more than file scope
 int MPIdata::rank=-1;
 int MPIdata::nprocs=-1;
+int MPIdata::PIC_COMM=MPI_COMM_NULL;
 static bool MPIdata_is_initialized=false;
 bool MPIdata_assert_initialized()
 {
@@ -62,11 +59,10 @@ void MPIdata::init(int *argc, char ***argv) {
   /* Initialize the MPI API */
   MPI_Init(argc, argv);
 
-  /* Set rank */
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_dup(MPI_COMM_WORLD, &PIC_COMM);
+  MPI_Comm_rank(PIC_COMM, &rank);
+  MPI_Comm_size(PIC_COMM, &nprocs);
 
-  /* Set total number of processors */
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
  #endif // NO_MPI
 
   MPIdata_is_initialized = true;
