@@ -758,9 +758,9 @@ void Particles3D::mover_PC_AoS(Field * EMf)
 		  wavg_old = wavg;
 
 		}// end of iteration
-
+#ifdef PRINTPCL
 		sum_innter +=innter;
-
+#endif
 		// update the final position and velocity
 		if(cap_velocity())
 		{
