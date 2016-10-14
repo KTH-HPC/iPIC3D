@@ -111,7 +111,7 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
   // We create a new communicator with a 3D virtual Cartesian topology
-  vct->setup_vctopology(MPI_COMM_WORLD);
+    vct->setup_vctopology(MPIdata::get_PicGlobalComm());
   {
     stringstream num_proc_ss;
     num_proc_ss << vct->getCartesian_rank();

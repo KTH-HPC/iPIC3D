@@ -159,7 +159,7 @@ struct Block
     //  listID, commID,
     //  dest.rank(), dest.tag_name(),
     //  nop);
-    MPI_Isend(&block[0], NUMBERS_PER_ELEMENT*block.size(), MPI_DOUBLE,
+    MPI_Isend((double*)&block[0], NUMBERS_PER_ELEMENT*block.size(), MPI_DOUBLE,
       dest.rank(), dest.tag(), dest.comm(), &request);
     //dprintf("finished sending block number %d", listID);
   }
@@ -188,7 +188,7 @@ struct Block
     // make sure that space exists to receive
     int newsize = signal_hack() ? capacity+1 : capacity;
     block.resize(newsize);
-    MPI_Irecv(&block[0], NUMBERS_PER_ELEMENT*block.size(), MPI_DOUBLE,
+    MPI_Irecv((double*)&block[0], NUMBERS_PER_ELEMENT*block.size(), MPI_DOUBLE,
       source.rank(), source.tag(), source.comm(), &request);
   }
   // processing received data

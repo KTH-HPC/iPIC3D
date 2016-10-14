@@ -26,7 +26,9 @@
 #include "errors.h"
 #include "Alloc.h"
 #include "TimeTasks.h"
-#include "ipicdefs.h"
+//#include "ipicdefs.h"
+#include "EMfields3D.h"
+#include "VCtopology3D.h"
 
 void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
   const double *b, int m, int max_iter, double tol, Field * field)
@@ -73,7 +75,9 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
             "------------------------------------\n\n");
   }
 
-  double normb = normP(b, xkrylovlen);
+  MPI_Comm fieldcomm = (field->get_vct()).getFieldComm();
+    
+  double normb = normP(b, xkrylovlen,&fieldcomm);
   if (normb == 0.0)
     normb = 1.0;
 
@@ -83,7 +87,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
     // r = b - A*x
     (field->*FunctionImage) (im, xkrylov);
     sub(r, b, im, xkrylovlen);
-    initial_error = normP(r, xkrylovlen);
+    initial_error = normP(r, xkrylovlen,&fieldcomm);
 
     if (itr == 0) {
       if (is_output_thread())
@@ -126,7 +130,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
       {
         
         MPI_Allreduce(MPI_IN_PLACE, y, (k+2),
-          MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+          MPI_DOUBLE, MPI_SUM, fieldcomm);
       }
       for (int j = 0; j <= k; j++) {
         H[j][k] = y[j];
@@ -134,7 +138,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
       }
       // Is there a numerically stable way to
       // eliminate this second all-reduce all?
-      H[k+1][k] = normP(V[k+1], xkrylovlen);
+      H[k+1][k] = normP(V[k+1], xkrylovlen,&fieldcomm);
       //
       // check that vectors are orthogonal
       //
@@ -150,11 +154,11 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen,
       if (av + delta * H[k + 1][k] == av)
       {
         for (int j = 0; j <= k; j++) {
-          const double htmp = dotP(w, V[j], xkrylovlen);
+          const double htmp = dotP(w, V[j], xkrylovlen,&fieldcomm);
           H[j][k] = H[j][k] + htmp;
           addscale(-htmp, w, V[j], xkrylovlen);
         }
-        H[k + 1][k] = normP(w, xkrylovlen);
+        H[k + 1][k] = normP(w, xkrylovlen,&fieldcomm);
       }
       // normalize the new vector
       scale(w, (1.0 / H[k + 1][k]), xkrylovlen);

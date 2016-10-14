@@ -301,7 +301,7 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf, Collective *col, VCtopology3D *
   infile.CloseFieldsFile();
 
   // initialize B on centers
-  MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPIdata::get_PicGlobalComm());
 
   // Comm ghost nodes for B-field
   communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx(), col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);

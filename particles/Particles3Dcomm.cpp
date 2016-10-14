@@ -33,7 +33,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "VCtopology3D.h"
 #include "Collective.h"
 #include "Alloc.h"
-#include "Basic.h"
 #include "Grid3DCU.h"
 #include "Field.h"
 #include "MPIdata.h"
