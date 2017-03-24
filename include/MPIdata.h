@@ -71,7 +71,7 @@ public:
 public:
   static int get_rank(){return instance().rank;}
   static int get_nprocs(){return instance().nprocs;}
-  static int get_PicGlobalComm(){return instance().PIC_COMM;}
+  static MPI_Comm get_PicGlobalComm(){return instance().PIC_COMM;}
 private:
     /*iPIC3D Global Communicator*/
   static MPI_Comm PIC_COMM;

@@ -30,7 +30,7 @@
 // no need for this to have more than file scope
 int MPIdata::rank=-1;
 int MPIdata::nprocs=-1;
-int MPIdata::PIC_COMM=MPI_COMM_NULL;
+MPI_Comm MPIdata::PIC_COMM=MPI_COMM_NULL;
 static bool MPIdata_is_initialized=false;
 bool MPIdata_assert_initialized()
 {
