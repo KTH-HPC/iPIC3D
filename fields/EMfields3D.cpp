@@ -3385,13 +3385,19 @@ void EMfields3D::init()
       communicateNode_P(nxn, nyn, nzn, moment0, vct, this);
     }
 
-    if (col->getCase()=="Dipole") {
+    if (col->getCase()=="Dipole") 
+    {
       ConstantChargePlanet(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-    }else if(col->getCase()=="Dipole2D") {
-    	ConstantChargePlanet2DPlaneXZ(col->getL_square(),col->getx_center(),col->getz_center());
-      }
-
-    ConstantChargeOpenBC();
+    }
+    else if (col->getCase()=="Dipole2D") 
+    {
+      ConstantChargePlanet2DPlaneXZ(col->getL_square(),col->getx_center(),col->getz_center());
+    }
+    // I am not sure what this open BC does, but perhaps it is responsible for energy losses in the restart? Jan 2017, Slavik.
+    else if ((col->getCase().find("TaylorGreen") != std::string::npos) && (col->getCase() != "NullPoints"))
+    {
+      ConstantChargeOpenBC();
+    }
 
     // communicate ghost
     communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct, this);
@@ -5431,10 +5437,11 @@ double EMfields3D::getBulkEnergy(int is) {
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
       for (int k = 1; k < nzn - 2; k++)
-        localBenergy += .5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / (rhons[is][i][j][k]);
+        // Trying to avoid division by zero. Where rho iz 0, current must be 0.
+        localBenergy += (fabs(rhons[is][i][j][k]) > 1.e-20) ? (0.5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / rhons[is][i][j][k]) : 0.0;
 
   MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, (&get_vct())->getFieldComm());
-  return (totalBenergy);
+  return (totalBenergy / qom[is]);
 }
 
 /*! Print info about electromagnetic field */
