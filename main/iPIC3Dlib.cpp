@@ -46,6 +46,10 @@
 
 #include "Moments.h" // for debugging
 
+#ifdef USE_CATALYST
+#include "Adaptor.h"
+#endif
+
 using namespace iPic3D;
 //MPIdata* iPic3D::c_Solver::mpi=0;
 
@@ -70,6 +74,9 @@ c_Solver::~c_Solver()
     free(part);
   }
 
+#ifdef USE_CATALYST
+  Adaptor::Finalize();
+#endif
   delete [] Ke;
   delete [] momentum;
   delete [] Qremoved;
@@ -234,6 +241,19 @@ int c_Solver::Init(int argc, char **argv) {
   
 
   Qremoved = new double[ns];
+
+#ifdef USE_CATALYST
+  Adaptor::Initialize(col, \
+		  (int)(grid->getXstart()/grid->getDX()), \
+		  (int)(grid->getYstart()/grid->getDY()), \
+		  (int)(grid->getZstart()/grid->getDZ()), \
+		  grid->getNXN(),
+		  grid->getNYN(),
+		  grid->getNZN(),
+		  grid->getDX(),
+		  grid->getDY(),
+		  grid->getDZ());
+#endif
 
   my_clock = new Timing(myrank);
 
@@ -438,6 +458,10 @@ bool c_Solver::ParticlesMover()
 }
 
 void c_Solver::WriteOutput(int cycle) {
+
+#ifdef USE_CATALYST
+  Adaptor::CoProcess(col->getDt()*cycle, cycle, EMf);
+#endif
 
   WriteConserved(cycle);
   WriteRestart(cycle);

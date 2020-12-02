@@ -10,59 +10,88 @@ cmake_minimum_required(VERSION 2.8.8)
 
 project(iPic3D)
 
-#
-# Set compiler flags per system
-#
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-   option(IPIC_XEONPHI "ipic xeon phi standard compile flags" on)
-   if(IPIC_XEONPHI) 
-     set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -fp-model fast=2 -vec-report -mmic")
-   else()
-     set(CMAKE_CXX_FLAGS "-mmic")
-   endif()
-   #set(CMAKE_CXX_FLAGS "$(CMAKE_CXX_FLAGS) -mmic")
-   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
-   #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
-elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
-   option(IPIC_XEON "optimisation with icpc"  OFF)
-   if(IPIC_XEON) 
-     #reporting: -g -vec-report
-     #optimization: -O3 -xHost -fno-exceptions
-     set(CMAKE_CXX_FLAGS "-openmp -fno-exceptions -O3 -xHost -vec-report")
-     set(CMAKE_CXX_COMPILER "icpc")  
-   endif()
-   #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
-   # -DPRINTPCL for printing particle subcycles 
-   #-DNO_HDF5 to disable output 
-   #-h noomp if running on bluewaters
-   set(CMAKE_CXX_FLAGS  "-O3 -DNO_HDF5 ")
-else()
-   set(CMAKE_CXX_FLAGS "-O3")
+##
+## Set compiler flags per system
+##
+#if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
+#   option(IPIC_XEONPHI "ipic xeon phi standard compile flags" on)
+#   if(IPIC_XEONPHI) 
+#     set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -fp-model fast=2 -vec-report -mmic")
+#   else()
+#     set(CMAKE_CXX_FLAGS "-mmic")
+#   endif()
+#   #set(CMAKE_CXX_FLAGS "$(CMAKE_CXX_FLAGS) -mmic")
+#   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
+#   #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
+#elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
+#   option(IPIC_XEON "optimisation with icpc"  OFF)
+#   if(IPIC_XEON) 
+#     #reporting: -g -vec-report
+#     #optimization: -O3 -xHost -fno-exceptions
+#     set(CMAKE_CXX_FLAGS "-openmp -fno-exceptions -O3 -xHost -vec-report")
+#     set(CMAKE_CXX_COMPILER "icpc")  
+#   endif()
+#   #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
+#   # -DPRINTPCL for printing particle subcycles 
+#   #-DNO_HDF5 to disable output 
+#   #-h noomp if running on bluewaters
+#   set(CMAKE_CXX_FLAGS  "-O3 -DNO_HDF5 ")
+#else()
+#   set(CMAKE_CXX_FLAGS "-O3")
+#endif()
+
+##
+## Find third class libraries
+##
+#if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
+#   set(CMAKE_PREFIX_PATH /opt/hdf5/1.8.10-patch1-mic)			
+#   set(VARIOUS_LIB /opt/intel/lib/mic)
+#   set (EXTRA_LIBS ${VARIOUS_LIB}/libimf.so ${VARIOUS_LIB}/libsvml.so ${VARIOUS_LIB}/libirng.so ${VARIOUS_LIB}/libintlc.so ${MPELIB})
+#else()
+#   find_package(MPI)
+#   set(EXTRA_LIBS "")   
+#endif()
+
+
+#if(${CMAKE_CXX_FLAGS} MATCHES "(.*)-DNO_HDF5(.*)")
+##do nothing
+#else()
+#	SITE_NAME(myhostname)
+#	if (${myhostname} MATCHES "(.*)pdc(.*)")
+#   	   set(HDF5_INCLUDE_DIRS /opt/cray/hdf5/1.8.7/cray/73/include)
+#	else()
+#		find_package(HDF5 COMPONENTS HL C )   
+#	endif()
+#endif()
+
+# Find ParaView
+option(USE_CATALYST "Use Catalyst adaptor" ON)
+if(USE_CATALYST)
+  find_package(ParaView 5.7 REQUIRED)
+
+  if (NOT TARGET ParaView::PythonCatalyst)
+    message(STATUS
+        "${CMAKE_PROJECT_NAME} requires ParaView to be built with Catalyst and "
+        "Python support enabled. Please rebuild ParaView (or point to a "
+        "different build of ParaView) with PARAVIEW_ENABLE_CATALYST and "
+        "PARAVIEW_ENABLE_PYTHON set to TRUE")
+  else()
+    add_library(iPICAdaptor SHARED ${CMAKE_SOURCE_DIR}/catalyst/Adaptor.cxx)
+    target_link_libraries(iPICAdaptor ParaView::PythonCatalyst VTK::CommonDataModel)
+
+    set(CATALYST_LIBRARIES iPICAdaptor)
+    set(CATALYST_DEFINITIONS -DUSE_CATALYST)
+    set(CATALYST_INCLUDES ${CMAKE_SOURCE_DIR}/catalyst)
+  endif()
 endif()
 
-#
-# Find third class libraries
-#
-if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-   set(CMAKE_PREFIX_PATH /opt/hdf5/1.8.10-patch1-mic)			
-   set(VARIOUS_LIB /opt/intel/lib/mic)
-   set (EXTRA_LIBS ${VARIOUS_LIB}/libimf.so ${VARIOUS_LIB}/libsvml.so ${VARIOUS_LIB}/libirng.so ${VARIOUS_LIB}/libintlc.so ${MPELIB})
-else()
-   find_package(MPI)
-   set(EXTRA_LIBS "")   
-endif()
+# Find HDF5
+option(USE_HDF5 "Use HDF5 library" ON)
+find_package(HDF5 COMPONENTS HL REQUIRED)
 
-
-if(${CMAKE_CXX_FLAGS} MATCHES "(.*)-DNO_HDF5(.*)")
-#do nothing
-else()
-	SITE_NAME(myhostname)
-	if (${myhostname} MATCHES "(.*)pdc(.*)")
-   	   set(HDF5_INCLUDE_DIRS /opt/cray/hdf5/1.8.7/cray/73/include)
-	else()
-		find_package(HDF5 COMPONENTS HL C )   
-	endif()
-endif()
+# Find MPI
+find_package(MPI REQUIRED)
+#list(APPEND IPIC_LIBRARIES ${MPI_LIBRARIES})
 
 #
 # include and lib directories
@@ -72,7 +101,8 @@ include_directories(
         include
         ${HDF5_INCLUDE_DIRS}
         ${HDF5_HL_INCLUDE_DIRS}
-        ${MPI_INCLUDE_PATH}
+	${MPI_C_INCLUDE_PATH}
+        ${CATALYST_INCLUDES}
 )
 
 link_directories(
@@ -165,13 +195,14 @@ target_link_libraries(
          ${HDF5_HL_LIBRARIES}
          ${MPI_LIBRARIES}
 	 ${EXTRA_LIBS}
+         ${CATALYST_LIBRARIES}
 )
 
 target_link_libraries(
          iPIC3D
          iPIC3Dlib
 )
-
+target_compile_definitions(iPIC3Dlib PUBLIC ${CATALYST_DEFINITIONS})
 ## to save the executable in the folder where the CMakeLists.txt file is, i.e. CMAKE_CURRENT_SOURCE_DIR
 set_target_properties(iPIC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 

@@ -197,10 +197,12 @@ class Collective
     int bcEx[6], bcEy[6], bcEz[6];
     /*! Boundary condition selection for BCFace for the magnetic field components */
     int bcBx[6], bcBy[6], bcBz[6];
+    string getParaviewScriptPath()const{return ParaviewScriptPath;}
 
   private:
     /*! inputfile */
     string inputfile;
+    string ParaviewScriptPath;
     /*! light speed */
     double c;
     /*! 4 pi */
