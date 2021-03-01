@@ -1,0 +1,8 @@
+- label: Documentation
+  items:
+    - name: Installation 
+      link: /install/
+    - name: Input files
+      link: /inputfiles/
+    - name: Run simulations
+      link: /simulation/

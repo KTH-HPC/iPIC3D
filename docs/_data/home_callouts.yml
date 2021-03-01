@@ -1,0 +1,11 @@
+style: is-light
+items:
+  - title: Space weather simulation
+    subtitle: Space weather and plasma simulation
+    icon: fa-space-shuttle
+  - title: Massive parallelism
+    subtitle: High parallel efficiency using MPI
+    icon: fa-tachometer-alt
+  - title: Products in VTK
+    subtitle: Visualization of 3D simulation results
+    icon: fa-images
