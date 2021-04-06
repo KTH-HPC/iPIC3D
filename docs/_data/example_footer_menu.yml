@@ -1,0 +1,8 @@
+- name: Home
+  link: /
+- name: Publications
+  link: /blog/
+- name: Gallery
+  link: /gallery/
+- name: Privacy Policy
+  link: /privacy-policy/
