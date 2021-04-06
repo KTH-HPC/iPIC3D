@@ -65,7 +65,7 @@ project(iPic3D)
 #endif()
 
 # Find ParaView
-option(USE_CATALYST "Use Catalyst adaptor" ON)
+option(USE_CATALYST "Use Catalyst adaptor" OFF)
 if(USE_CATALYST)
   find_package(ParaView 5.7 REQUIRED)
 

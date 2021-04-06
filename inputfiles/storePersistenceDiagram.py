@@ -4,7 +4,7 @@
 from paraview import coprocessing, simple
 from paraview.simple import servermanager as sm
 import os
-pv_case    = os.environ['PV_CASE'] if 'PV_CASE' in os.environ else 'viz'
+#pv_case    = os.environ['PV_CASE'] if 'PV_CASE' in os.environ else 'viz'
 pv_address = os.environ['PV_ADDRESS'] if 'PV_ADDRESS' in os.environ else 'localhost'
 pv_port    = os.environ['PV_PORT'] if 'PV_PORT' in os.environ else 22222
 print('pv_address', pv_address, pv_port)
@@ -36,7 +36,7 @@ make_cinema_table = False
 
 def CreateCoProcessor():
     def _CreatePipeline(coprocessor, datadescription):
-        particles = coprocessor.CreateProducer(datadescription, "particles_"+str(pv_case))
+        particles = coprocessor.CreateProducer(datadescription, "particles")
         ppdwriter0 = sm.writers.XMLPImageDataWriter(Input=particles)
         ## create a producer from a simulation input
         #particles = coprocessor.CreateProducer(datadescription, "particles")
