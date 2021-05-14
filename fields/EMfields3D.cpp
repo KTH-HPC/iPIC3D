@@ -366,7 +366,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D *vct) :
 
 }
 void EMfields3D::freeDataType(){
-	MPI_Type_free(&yzFacetypeC);
+    MPI_Type_free(&yzFacetypeC);
     MPI_Type_free(&xzFacetypeC);
     MPI_Type_free(&xyFacetypeC);
     MPI_Type_free(&xEdgetypeC);
@@ -388,8 +388,12 @@ void EMfields3D::freeDataType(){
     MPI_Type_free(&zEdgetypeN2);
     MPI_Type_free(&cornertypeN);
 
-    MPI_Type_free(&procview);
-    MPI_Type_free(&xyzcomp);
+    if (_col.getWriteMethod() == "pvtk" || _col.getWriteMethod() == "nbcvtk"){
+        MPI_Type_free(&procview);
+        MPI_Type_free(&xyzcomp);
+        MPI_Type_free(&procviewXYZ);
+        MPI_Type_free(&ghosttype);
+    }
 }
 
 // This was Particles3Dcomm::interpP2G()
