@@ -53,16 +53,16 @@ project(iPic3D)
 #endif()
 
 
-#if(${CMAKE_CXX_FLAGS} MATCHES "(.*)-DNO_HDF5(.*)")
-##do nothing
-#else()
-#	SITE_NAME(myhostname)
-#	if (${myhostname} MATCHES "(.*)pdc(.*)")
-#   	   set(HDF5_INCLUDE_DIRS /opt/cray/hdf5/1.8.7/cray/73/include)
-#	else()
-#		find_package(HDF5 COMPONENTS HL C )   
-#	endif()
-#endif()
+if(${CMAKE_CXX_FLAGS} MATCHES "(.*)-DNO_HDF5(.*)")
+#do nothing
+else()
+	SITE_NAME(myhostname)
+	if (${myhostname} MATCHES "(.*)pdc(.*)")
+   	   set(HDF5_INCLUDE_DIRS /opt/cray/hdf5/1.8.7/cray/73/include)
+	else()
+		find_package(HDF5 COMPONENTS HL C )   
+	endif()
+endif()
 
 # Find ParaView
 option(USE_CATALYST "Use Catalyst adaptor" OFF)
@@ -85,9 +85,9 @@ if(USE_CATALYST)
   endif()
 endif()
 
-# Find HDF5
-option(USE_HDF5 "Use HDF5 library" ON)
-find_package(HDF5 COMPONENTS HL REQUIRED)
+## Find HDF5
+#option(USE_HDF5 "Use HDF5 library" ON)
+#find_package(HDF5 COMPONENTS HL REQUIRED)
 
 # Find MPI
 find_package(MPI REQUIRED)
