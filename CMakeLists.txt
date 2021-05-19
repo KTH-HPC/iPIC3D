@@ -10,47 +10,47 @@ cmake_minimum_required(VERSION 2.8.8)
 
 project(iPic3D)
 
-##
-## Set compiler flags per system
-##
-#if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-#   option(IPIC_XEONPHI "ipic xeon phi standard compile flags" on)
-#   if(IPIC_XEONPHI) 
-#     set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -fp-model fast=2 -vec-report -mmic")
-#   else()
-#     set(CMAKE_CXX_FLAGS "-mmic")
-#   endif()
-#   #set(CMAKE_CXX_FLAGS "$(CMAKE_CXX_FLAGS) -mmic")
-#   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
-#   #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
-#elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
-#   option(IPIC_XEON "optimisation with icpc"  OFF)
-#   if(IPIC_XEON) 
-#     #reporting: -g -vec-report
-#     #optimization: -O3 -xHost -fno-exceptions
-#     set(CMAKE_CXX_FLAGS "-openmp -fno-exceptions -O3 -xHost -vec-report")
-#     set(CMAKE_CXX_COMPILER "icpc")  
-#   endif()
-#   #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
-#   # -DPRINTPCL for printing particle subcycles 
-#   #-DNO_HDF5 to disable output 
-#   #-h noomp if running on bluewaters
-#   set(CMAKE_CXX_FLAGS  "-O3 -DNO_HDF5 ")
-#else()
-#   set(CMAKE_CXX_FLAGS "-O3")
-#endif()
+#
+# Set compiler flags per system
+#
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
+   option(IPIC_XEONPHI "ipic xeon phi standard compile flags" on)
+   if(IPIC_XEONPHI) 
+     set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -fp-model fast=2 -vec-report -mmic")
+   else()
+     set(CMAKE_CXX_FLAGS "-mmic")
+   endif()
+   #set(CMAKE_CXX_FLAGS "$(CMAKE_CXX_FLAGS) -mmic")
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
+   #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
+elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
+   option(IPIC_XEON "optimisation with icpc"  OFF)
+   if(IPIC_XEON) 
+     #reporting: -g -vec-report
+     #optimization: -O3 -xHost -fno-exceptions
+     set(CMAKE_CXX_FLAGS "-openmp -fno-exceptions -O3 -xHost -vec-report")
+     set(CMAKE_CXX_COMPILER "icpc")  
+   endif()
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
+   # -DPRINTPCL for printing particle subcycles 
+   #-DNO_HDF5 to disable output 
+   #-h noomp if running on bluewaters
+   set(CMAKE_CXX_FLAGS  "-O3 -DNO_HDF5 ")
+else()
+   set(CMAKE_CXX_FLAGS "-O3")
+endif()
 
-##
-## Find third class libraries
-##
-#if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-#   set(CMAKE_PREFIX_PATH /opt/hdf5/1.8.10-patch1-mic)			
-#   set(VARIOUS_LIB /opt/intel/lib/mic)
-#   set (EXTRA_LIBS ${VARIOUS_LIB}/libimf.so ${VARIOUS_LIB}/libsvml.so ${VARIOUS_LIB}/libirng.so ${VARIOUS_LIB}/libintlc.so ${MPELIB})
-#else()
-#   find_package(MPI)
-#   set(EXTRA_LIBS "")   
-#endif()
+#
+# Find third class libraries
+#
+if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
+   set(CMAKE_PREFIX_PATH /opt/hdf5/1.8.10-patch1-mic)			
+   set(VARIOUS_LIB /opt/intel/lib/mic)
+   set (EXTRA_LIBS ${VARIOUS_LIB}/libimf.so ${VARIOUS_LIB}/libsvml.so ${VARIOUS_LIB}/libirng.so ${VARIOUS_LIB}/libintlc.so ${MPELIB})
+else()
+   find_package(MPI)
+   set(EXTRA_LIBS "")   
+endif()
 
 
 if(${CMAKE_CXX_FLAGS} MATCHES "(.*)-DNO_HDF5(.*)")
