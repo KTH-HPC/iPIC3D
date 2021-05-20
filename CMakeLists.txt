@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(iPic3D)
 
+cmake_policy(SET CMP0042 NEW)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # Use CMake default variable for this so add_library will
 # automatically do the right thing.
 option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
@@ -12,6 +16,8 @@ option(USE_BATSRUS "Use BATSRUS flag" OFF)
 # code it appears that this option could be made to work with minimal
 # effort.
 # option(USE_HDF5 "Use HDF5 library" ON)
+
+include(GNUInstallDirs)
 
 # Find ParaView
 if(USE_CATALYST)
@@ -25,6 +31,9 @@ if(USE_CATALYST)
       "PARAVIEW_ENABLE_PYTHON set to TRUE")
   else()
     add_library(iPICAdaptor ${CMAKE_SOURCE_DIR}/catalyst/Adaptor.cxx)
+    if (BUILD_SHARED_LIBS)
+      install(TARGETS iPICAdaptor)
+    endif()
 
     target_link_libraries(iPICAdaptor PRIVATE ParaView::PythonCatalyst VTK::CommonDataModel Python3::Python)
     target_include_directories(iPICAdaptor INTERFACE ${CMAKE_SOURCE_DIR}/catalyst)
@@ -125,6 +134,10 @@ else()
   message(" INFO: BATSRUS is not active.")
 endif()
 
+if (BUILD_SHARED_LIBS)
+  install(TARGETS iPIC3Dlib)
+endif()
+
 #
 # Executable declaration
 #
@@ -145,6 +158,27 @@ set_target_properties(iPIC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_
 
 ## debug releases have a _d appended to the executable
 set_target_properties(iPIC3D PROPERTIES DEBUG_POSTFIX "_d")
+
+# Here we do the RPATH stuff so the exe is relocatable.
+# Make it a function to avoid variables leaking.
+function(add_install_libdir_to_rpath tgt)
+  if(BUILD_SHARED_LIBS)
+    get_target_property(install_rpaths ${tgt} INSTALL_RPATH)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+      list(APPEND install_rpaths "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+    endif()
+    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+      list(APPEND install_rpaths "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+    endif()
+    list(REMOVE_DUPLICATES install_rpaths)
+    set_target_properties(${tgt}
+      PROPERTIES INSTALL_RPATH "${install_rpaths}"
+      )
+  endif()
+endfunction()
+add_install_libdir_to_rpath(iPIC3D)
+
+install(TARGETS iPIC3D)
 
 message("Which system am I compiling for:")
 message("MYHOSTNAME is ${myhostname}")
