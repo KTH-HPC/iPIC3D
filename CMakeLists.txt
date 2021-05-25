@@ -180,6 +180,8 @@ add_install_libdir_to_rpath(iPIC3D)
 
 install(TARGETS iPIC3D)
 
+add_subdirectory(inputfiles)
+
 message("Which system am I compiling for:")
 message("MYHOSTNAME is ${myhostname}")
 message("CMAKE_SYSTEM_PROCESSOR is ${CMAKE_SYSTEM_PROCESSOR}")
