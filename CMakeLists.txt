@@ -6,12 +6,34 @@ cmake_policy(SET CMP0042 NEW)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# First, do the site configuration
+#
+# This function globs for the existing configurations.
+function(get_sites OUTVAR)
+  file(GLOB site_incs RELATIVE "${CMAKE_SOURCE_DIR}/cmake/sites" "${CMAKE_SOURCE_DIR}/cmake/sites/*.cmake")
+  set(sites "")
+  foreach(inc "${site_incs}")
+    string(REPLACE ".cmake" "" site "${inc}")
+    list(APPEND sites "${site}")
+  endforeach()
+  list(REMOVE_ITEM sites "default")
+  list(PREPEND sites "default")
+  set(${OUTVAR} "${sites}" PARENT_SCOPE)
+endfunction()
+get_sites(KNOWN_SITES)
+
+# Set up cache var for which site we are using
+set(SITE "default" CACHE STRING "A predefined site configuration to use")
+# Set the options for the UI
+set_property(CACHE SITE PROPERTY STRINGS "${KNOWN_SITES}")
+# Include the selected one
+include("${CMAKE_SOURCE_DIR}/cmake/sites/${SITE}.cmake")
+
 # Use CMake default variable for this so add_library will
 # automatically do the right thing.
 option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
 option(USE_CATALYST "Use Catalyst adaptor" OFF)
 option(USE_BATSRUS "Use BATSRUS flag" OFF)
-
 option(USE_HDF5 "Use HDF5 library" OFF)
 
 include(GNUInstallDirs)
