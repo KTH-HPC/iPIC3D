@@ -9,7 +9,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # Use CMake default variable for this so add_library will
 # automatically do the right thing.
 option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
-option(USE_CATALYST "Use Catalyst adaptor" ON)
+option(USE_CATALYST "Use Catalyst adaptor" OFF)
 option(USE_BATSRUS "Use BATSRUS flag" OFF)
 
 # With the current setup, HDF is required. From a brief look at the
