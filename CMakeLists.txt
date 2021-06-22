@@ -12,10 +12,7 @@ option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
 option(USE_CATALYST "Use Catalyst adaptor" OFF)
 option(USE_BATSRUS "Use BATSRUS flag" OFF)
 
-# With the current setup, HDF is required. From a brief look at the
-# code it appears that this option could be made to work with minimal
-# effort.
-# option(USE_HDF5 "Use HDF5 library" ON)
+option(USE_HDF5 "Use HDF5 library" OFF)
 
 include(GNUInstallDirs)
 
@@ -43,34 +40,35 @@ if(USE_CATALYST)
 endif()
 
 # Find HDF5
-if(BUILD_SHARED_LIBS)
-  set(HDF5_USE_STATIC_LIBRARIES OFF)
-else()
-  set(HDF5_USE_STATIC_LIBRARIES ON)
+if (USE_HDF5)
+  if(BUILD_SHARED_LIBS)
+    set(HDF5_USE_STATIC_LIBRARIES OFF)
+  else()
+    set(HDF5_USE_STATIC_LIBRARIES ON)
+  endif()
+  find_package(HDF5 COMPONENTS C HL REQUIRED)
+
+
+  if (NOT DEFINED HDF5_C_TARGET)
+    message(STATUS "Creating a proper target for HDF5")
+    add_library(hdf5::hdf5 INTERFACE IMPORTED)
+    set_target_properties(hdf5::hdf5 PROPERTIES
+      INTERFACE_COMPILE_DEFINITIONS "${HDF5_C_DEFINITIONS}"
+      INTERFACE_INCLUDE_DIRECTORIES "${HDF5_C_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${HDF5_C_LIBRARIES}"
+      )
+    set(HDF5_C_TARGET hdf5::hdf5)
+  endif()
+
+  if (NOT DEFINED HDF5_C_HL_TARGET)
+    message(STATUS "Creating a proper target for HDF5 HL")
+    add_library(hdf5::hdf5_hl INTERFACE IMPORTED)
+    set_target_properties(hdf5::hdf5_hl PROPERTIES
+      INTERFACE_LINK_LIBRARIES "hdf5::hdf5;${HDF5_C_HL_LIBRARIES}"
+      )
+    set(HDF5_C_HL_TARGET hdf5::hdf5_hl)
+  endif()
 endif()
-find_package(HDF5 COMPONENTS C HL REQUIRED)
-
-
-if (NOT DEFINED HDF5_C_TARGET)
-  message(STATUS "Creating a proper target for HDF5")
-  add_library(hdf5::hdf5 INTERFACE IMPORTED)
-  set_target_properties(hdf5::hdf5 PROPERTIES
-    INTERFACE_COMPILE_DEFINITIONS "${HDF5_C_DEFINITIONS}"
-    INTERFACE_INCLUDE_DIRECTORIES "${HDF5_C_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${HDF5_C_LIBRARIES}"
-    )
-  set(HDF5_C_TARGET hdf5::hdf5)
-endif()
-
-if (NOT DEFINED HDF5_C_HL_TARGET)
-  message(STATUS "Creating a proper target for HDF5 HL")
-  add_library(hdf5::hdf5_hl INTERFACE IMPORTED)
-  set_target_properties(hdf5::hdf5_hl PROPERTIES
-    INTERFACE_LINK_LIBRARIES "hdf5::hdf5;${HDF5_C_HL_LIBRARIES}"
-    )
-  set(HDF5_C_HL_TARGET hdf5::hdf5_hl)
-endif()
-
 
 # Find MPI
 find_package(MPI REQUIRED COMPONENTS CXX)
@@ -132,6 +130,10 @@ if(USE_BATSRUS)
   message(" WARNING: BATSRUS flag is active.")
 else()
   message(" INFO: BATSRUS is not active.")
+endif()
+
+if(NOT USE_HDF5)
+  target_compile_definitions(iPIC3Dlib PUBLIC NO_HDF5)
 endif()
 
 if (BUILD_SHARED_LIBS)
