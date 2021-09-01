@@ -1503,7 +1503,7 @@ void Particles3Dcomm::communicate_particles()
 double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
-  for (register int i = 0; i < _pcls.size(); i++)
+  for (int i = 0; i < _pcls.size(); i++)
   {
     SpeciesParticle& pcl = _pcls[i];
     const double u = pcl.get_u();
@@ -1525,7 +1525,7 @@ double Particles3Dcomm::getKe() {
 double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
-  for (register int i = 0; i < _pcls.size(); i++)
+  for (int i = 0; i < _pcls.size(); i++)
   {
     SpeciesParticle& pcl = _pcls[i];
     const double u = pcl.get_u();
