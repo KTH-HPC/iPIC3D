@@ -214,7 +214,7 @@ int c_Solver::Init(int argc, char **argv) {
 		}
 		#endif
 	  if(!col->field_output_is_off()){
-		  if(col->getWriteMethod()=="pvtk"){
+		  if(col->getWriteMethod()=="pvtk" || col->getWriteMethod()=="noa"){
 			  if(!(col->getFieldOutputTag()).empty())
 				  fieldwritebuffer = newArr4(float,(grid->getNZN()-3),grid->getNYN()-3,grid->getNXN()-3,3);
 			  if(!(col->getMomentsOutputTag()).empty())
@@ -521,6 +521,7 @@ void c_Solver::WriteOutput(int cycle) {
 
   }else if (col->getWriteMethod() == "pvtk"){//Blocking collective MPI-IO
 	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  double t0 = MPI_Wtime();
 		  if(!(col->getFieldOutputTag()).empty()){
 			  //WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle);//B + E + Je + Ji + rho
 			  WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle, fieldwritebuffer);//B + E + Je + Ji + rho
@@ -528,12 +529,47 @@ void c_Solver::WriteOutput(int cycle) {
 		  if(!(col->getMomentsOutputTag()).empty()){
 			  WriteMomentsVTK(grid, EMf, col, vct, col->getMomentsOutputTag() ,cycle, momentwritebuffer);
 		  }
+                  double t1 = MPI_Wtime();
+                  double write_field_time = t1 - t0;
+                  //printf("Write fields: cycle: %d , rank %d: %f s\n", cycle, MPIdata::get_rank(), write_field_time);
+                  double max_write_field_time;
+                  MPI_Reduce(&write_field_time, &max_write_field_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+                  if(MPIdata::get_rank()==0) {
+                      printf("Write fields: cycle: %d , max: %f s\n", cycle, max_write_field_time);
+                      fflush(stdout);
+                  }
 	  }
 
 	  //Particle information is still in hdf5
 	  	WriteParticles(cycle);
 	  //Test Particle information is still in hdf5
 	    WriteTestParticles(cycle);
+  }else if (col->getWriteMethod() == "noa"){//Blocking collective MPI-IO
+	  if(!col->field_output_is_off() && (cycle%(col->getFieldOutputCycle()) == 0 || cycle == first_cycle) ){
+		  double t0 = MPI_Wtime();
+		  if(!(col->getFieldOutputTag()).empty()){
+			  //WriteFieldsVTK(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle);//B + E + Je + Ji + rho
+			  WriteFieldsVTK_noa(grid, EMf, col, vct, col->getFieldOutputTag() ,cycle, fieldwritebuffer);//B + E + Je + Ji + rho
+		  }
+		  if(!(col->getMomentsOutputTag()).empty()){
+			  WriteMomentsVTK_noa(grid, EMf, col, vct, col->getMomentsOutputTag() ,cycle, momentwritebuffer);
+		  }
+                  double t1 = MPI_Wtime();
+                  double write_field_time = t1 - t0;
+                  //printf("Write fields: cycle: %d , rank %d: %f s\n", cycle, MPIdata::get_rank(), write_field_time);
+                  double max_write_field_time;
+                  MPI_Reduce(&write_field_time, &max_write_field_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+                  if(MPIdata::get_rank()==0) {
+                      printf("Write fields: cycle: %d , max: %f s\n", cycle, max_write_field_time);
+                      fflush(stdout);
+		  }
+	  }
+
+	  //Particle information is still in hdf5
+	  	WriteParticles(cycle);
+	  //Test Particle information is still in hdf5
+	    WriteTestParticles(cycle);
+
 
   }else{
 

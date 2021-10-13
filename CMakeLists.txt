@@ -40,6 +40,7 @@ option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
 option(USE_CATALYST "Use Catalyst adaptor" OFF)
 option(USE_BATSRUS "Use BATSRUS flag" OFF)
 option(USE_HDF5 "Use HDF5 library" OFF)
+option(NOASCI_ROOT "Folder for NoaSci" "/home/steven/Programs/pdp-2022/libNoaSci")
 
 include(GNUInstallDirs)
 
@@ -130,7 +131,7 @@ add_library(
 
 target_include_directories(
   iPIC3Dlib
-  PUBLIC include
+  PUBLIC include ${HDF5_C_INCLUDE_DIRS} ${NOASCI_ROOT}/build/src ${NOASCI_ROOT}/include
   )
 
 #
@@ -139,7 +140,7 @@ target_include_directories(
 target_link_libraries(
   iPIC3Dlib
   PUBLIC MPI::MPI_CXX
-  PRIVATE ${HDF5_C_HL_TARGET}
+  PRIVATE ${HDF5_C_HL_TARGET} ${NOASCI_ROOT}/build/libnoa.so
   )
 
 if (USE_CATALYST)
@@ -167,6 +168,10 @@ if (BUILD_SHARED_LIBS)
   install(TARGETS iPIC3Dlib)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Fujitsu")
+  target_compile_options(iPIC3Dlib PRIVATE -Kfast,SVE,openmp,optmsg=2 -fPIC)
+endif()
+
 #
 # Executable declaration
 #
@@ -177,9 +182,13 @@ add_executable(
   iPIC3D.cpp
   )
 
+find_package(PkgConfig REQUIRED)
+pkg_search_module(PROTO-C REQUIRED libprotobuf-c)
+pkg_search_module(UUID REQUIRED uuid)
+
 target_link_libraries(
   iPIC3D
-  iPIC3Dlib
+  iPIC3Dlib ${PROTO-C_LINK_LIBRARIES} ${UUID_LIBRARIES}
   )
 
 ## to save the executable in the folder where the CMakeLists.txt file is, i.e. CMAKE_CURRENT_SOURCE_DIR
@@ -187,6 +196,10 @@ set_target_properties(iPIC3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_
 
 ## debug releases have a _d appended to the executable
 set_target_properties(iPIC3D PROPERTIES DEBUG_POSTFIX "_d")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Fujitsu")
+  target_link_options(iPIC3D PUBLIC -Kfast,SVE,openmp,optmsg=2)
+endif()
 
 # Here we do the RPATH stuff so the exe is relocatable.
 # Make it a function to avoid variables leaking.
@@ -221,3 +234,4 @@ message("HDF5_INCLUDE_DIRS is ${HDF5_INCLUDE_DIRS}")
 message("HDF5_LIBRARIES   is ${HDF5_LIBRARIES}")
 message("HDF5_HL_LIBRARIES is ${HDF5_HL_LIBRARIES}")
 message("MPI_LIBRARIES is ${MPI_LIBRARIES}")
+message("NOASCI_ROOT is ${NOASCI_ROOT}")

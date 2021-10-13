@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     KCode.CalculateMoments();
     KCode.WriteOutput(i);
     // print out total time for all tasks
-    //timeTasks.print_cycle_times(i);
+    timeTasks.print_cycle_times(i);
   }
 
   KCode.Finalize();
