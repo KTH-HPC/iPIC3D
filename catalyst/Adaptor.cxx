@@ -98,9 +98,9 @@ void UpdateVTKAttributes(vtkCPInputDataDescription *idd, EMfields3D *EMf) {
       field_array->SetComponent(p, 1, By[i][j][k]);
       field_array->SetComponent(p, 2, Bz[i][j][k]);
 
-      rhons0->SetValue(p, rhons[0][i][j][k]);
+      rhons0->SetValue(p, (float)EMf->getRHOns(i, j, k, 0)*4*3.1415926535897);
       if (rhons.dim1() > 1) {
-        rhons1->SetValue(p, rhons[1][i][j][k]);
+        rhons1->SetValue(p, (float)EMf->getRHOns(i, j, k, 1)*4*3.1415926535897);
       }
     }
 
@@ -168,7 +168,7 @@ void Initialize(const Collective *sim_params, const int start_x,
     // the first time it's needed. If we needed the memory
     // we could delete it and rebuild as necessary.
     VTKGrid = vtkImageData::New();
-    printf("%d %d %d %d\n", start_x, start_z, nx, nz);
+    //printf("%d %d %d %d\n", start_x, start_z, nx, nz);
     VTKGrid->SetExtent(start_x, start_x + nx - 1, start_y, start_y + ny - 1,
                        start_z, start_z + nz - 1);
     VTKGrid->SetSpacing(dx, dy, dz);
