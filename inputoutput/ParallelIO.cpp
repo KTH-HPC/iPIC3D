@@ -841,7 +841,7 @@ void WriteFieldsVTK_noa(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCto
 
 		long dims[] = { dimZ, dimY, dimX, 3 };
 		long chunk_dims[] = { nzn-3, nyn-3, nxn-3, 3 };
-		NoaMetadata *metadata = noa_create_metadata(bucket, string(fieldtags[tagid]).c_str(), FLOAT, VTK, POSIX, 4, dims, chunk_dims);
+		NoaMetadata *metadata = noa_create_metadata(bucket, string(fieldtags[tagid]).c_str(), FLOAT, VTK, MERO, 4, dims, chunk_dims);
 		rc = noa_put_chunk(bucket, metadata, fieldwritebuffer[0][0][0], 0, header);
 		assert(rc == 0);
 		rc = noa_put_metadata(bucket, metadata);
@@ -1209,7 +1209,7 @@ void WriteMomentsVTK_noa(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 			long chunk_dims[] = { nzn-3, nyn-3, nxn-3 };
 			//filename << col->getSaveDirName() << "/" << col->getSimName() << "_" << momentstags[tagid] << ((si%2==0)?"e":"i")<< si  << "_" << cycle << ".vtk";
                         string filename = momentstags[tagid] + "_" + ((si%2==0)?"e":"i") + to_string(si);
-			NoaMetadata *metadata = noa_create_metadata(bucket, filename.c_str(), FLOAT, VTK, POSIX, 3, dims, chunk_dims);
+			NoaMetadata *metadata = noa_create_metadata(bucket, filename.c_str(), FLOAT, VTK, MERO, 3, dims, chunk_dims);
 			rc = noa_put_chunk(bucket, metadata, &momentswritebuffer[0][0][0], 0, header);
 			assert(rc == 0);
 			rc = noa_put_metadata(bucket, metadata);

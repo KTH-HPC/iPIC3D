@@ -40,7 +40,7 @@ option(BUILD_SHARED_LIBS "Use shared libraries if ON, static if OFF" ON)
 option(USE_CATALYST "Use Catalyst adaptor" OFF)
 option(USE_BATSRUS "Use BATSRUS flag" OFF)
 option(USE_HDF5 "Use HDF5 library" OFF)
-option(NOASCI_ROOT "Folder for NoaSci" "/home/steven/Programs/pdp-2022/libNoaSci")
+option(NOASCI_ROOT "Folder for NoaSci" "/home/users/project/SHARED/NoaSci/src/NoaSci/build")
 
 include(GNUInstallDirs)
 
@@ -131,7 +131,7 @@ add_library(
 
 target_include_directories(
   iPIC3Dlib
-  PUBLIC include ${HDF5_C_INCLUDE_DIRS} ${NOASCI_ROOT}/build/src ${NOASCI_ROOT}/include
+  PUBLIC include ${HDF5_C_INCLUDE_DIRS} ${NOASCI_ROOT}/build/src ${NOASCI_ROOT}/include ${PROTO-C_INCLUDE_DIRS}
   )
 
 #
@@ -171,6 +171,7 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Fujitsu")
   target_compile_options(iPIC3Dlib PRIVATE -Kfast,SVE,openmp,optmsg=2 -fPIC)
 endif()
+target_compile_options(iPIC3Dlib PUBLIC -fopenmp -O3 -g -Wall)
 
 #
 # Executable declaration
@@ -200,6 +201,7 @@ set_target_properties(iPIC3D PROPERTIES DEBUG_POSTFIX "_d")
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Fujitsu")
   target_link_options(iPIC3D PUBLIC -Kfast,SVE,openmp,optmsg=2)
 endif()
+target_link_options(iPIC3D PUBLIC -fopenmp -O3 -g -Wall)
 
 # Here we do the RPATH stuff so the exe is relocatable.
 # Make it a function to avoid variables leaking.

@@ -50,6 +50,9 @@
 #include "Adaptor.h"
 #endif
 
+#include <unistd.h>
+#include <noa.h>
+
 using namespace iPic3D;
 //MPIdata* iPic3D::c_Solver::mpi=0;
 
@@ -254,6 +257,16 @@ int c_Solver::Init(int argc, char **argv) {
 		  grid->getDY(),
 		  grid->getDZ());
 #endif
+
+  // NoaSci init to motr
+  cout << "connecting to mero..." << endl;
+  size_t hostname_len = 256;
+  char hostname[hostname_len];
+  assert( gethostname(hostname, hostname_len) == 0);
+
+  char mero_filename[265];
+  snprintf(mero_filename, 265, "./%s", hostname);
+  noa_init(mero_filename, 4096, myrank%4/*only 4 sockets on each client*/, 0);
 
   my_clock = new Timing(myrank);
 
