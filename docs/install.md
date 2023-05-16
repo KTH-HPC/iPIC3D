@@ -14,11 +14,12 @@ Download and install iPIC3D using the following commands.
 
 ### Download
 
-Clone the repository from Bitbucket:
+Clone the repository from Github:
 
 #### Linux
 ```bash
-git clone https://bitbucket.org/bopkth/ipic3d-klm.git
+git clone https://github.com/KTH-HPC/iPIC3D.git
+
 ```
 
 ### Build and install
