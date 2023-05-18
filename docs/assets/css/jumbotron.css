@@ -3,6 +3,6 @@ html {
 }
 
 .jumbotron{
-	background: url("/assets/img/cover_pic.png") no-repeat center center; 
+	background: url("/iPIC3D/assets/img/cover_pic.png") no-repeat center center; 
 	background-size: cover;
 }
