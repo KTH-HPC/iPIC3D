@@ -81,6 +81,7 @@ c_Solver::~c_Solver()
   delete [] momentum;
   delete [] Qremoved;
   delete my_clock;
+  delete [] BulkEnergy;
 }
 
 int c_Solver::Init(int argc, char **argv) {
